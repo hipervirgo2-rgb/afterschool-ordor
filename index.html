@@ -33,8 +33,8 @@
         <div>
           <h1 class="text-lg md:text-xl font-extrabold tracking-tight">방과후 한솥 실시간 주문기</h1>
           <div class="flex items-center gap-1.5 text-[11px] text-amber-900 font-medium">
-            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-600 pulse-dot"></span>
-            <span id="syncStatusLabel">시스템 로딩 중...</span>
+            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+            <span id="syncStatusLabel">연결 상태 확인 중...</span>
           </div>
         </div>
       </div>
@@ -49,6 +49,17 @@
     </div>
   </header>
 
+  <!-- 실시간 미연동 시 안내 배너 -->
+  <div id="localWarningBanner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+        <span><b>현재 단일 기기(로컬) 모드입니다.</b> 학생들의 스마트폰 주문이 실시간으로 합쳐지려면 무료 Firebase 연동이 필요합니다.</span>
+      </div>
+      <button onclick="openFirebaseGuideModal()" class="shrink-0 font-bold underline hover:text-amber-700">연동 방법 보기</button>
+    </div>
+  </div>
+
   <main class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- 좌측: 학생 선택 및 메뉴 카탈로그 (2열 차지) -->
@@ -60,7 +71,7 @@
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
             <i class="fa-solid fa-id-card text-amber-500 mr-1"></i> 주문자 학생 선택 (본인 이름 클릭)
           </label>
-          <span class="text-[11px] text-slate-400">등록된 이름과 주문은 영구 저장됩니다</span>
+          <span class="text-[11px] text-slate-400">등록된 이름과 주문은 실시간 공유됩니다</span>
         </div>
         
         <div class="flex gap-2 mb-3">
@@ -138,7 +149,7 @@
             <h2 class="text-sm font-bold flex items-center gap-1.5 text-slate-800">
               <i class="fa-solid fa-clipboard-list text-amber-500"></i> 실시간 주문 집계
             </h2>
-            <p class="text-[11px] text-slate-400 mt-0.5">전체 주문이 실시간 합산 집계됩니다</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">전체 학생의 주문이 실시간 합산 집계됩니다</p>
           </div>
           <div class="flex items-center gap-1.5">
             <button onclick="clearAllOrdersPrompt()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1 font-semibold transition">
@@ -227,22 +238,59 @@
       <!-- 메뉴 편집 화면 -->
       <div id="adminEditSection" class="hidden flex-1 overflow-hidden flex flex-col">
         <div class="flex justify-between items-center mb-2.5">
-          <span class="text-xs text-slate-500">핸들을 드래그해 순서를 바꿀 수 있습니다. 저장 시 새로고침 후에도 영구 유지됩니다.</span>
+          <span class="text-xs text-slate-500">핸들을 드래그해 순서를 바꿀 수 있습니다. 저장 시 모든 기기에 실시간 반영됩니다.</span>
           <button onclick="addNewMenuRow()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition">
             + 새 메뉴 추가
           </button>
         </div>
         <div id="adminMenuList" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs border border-slate-200 rounded-xl p-3 bg-slate-50">
         </div>
-        <div class="pt-4 mt-2 border-t border-slate-200 flex justify-end gap-2">
-          <button onclick="resetToDefaultMenusPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-rose-200 transition">
+        <div class="pt-4 mt-2 border-t border-slate-200 flex justify-between items-center gap-2">
+          <button onclick="resetToDefaultMenusPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-2 rounded-xl text-xs border border-rose-200 transition">
             기본 한솥 메뉴로 리셋
           </button>
-          <button onclick="saveAdminChanges()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm transition">
-            저장하고 전체 반영
-          </button>
+          <div class="flex gap-2">
+            <button onclick="openFirebaseGuideModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3.5 py-2 rounded-xl text-xs transition">
+              <i class="fa-solid fa-cloud mr-1"></i> 클라우드 연동 안내
+            </button>
+            <button onclick="saveAdminChanges()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm transition">
+              저장하고 전체 반영
+            </button>
+          </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Firebase 연동 가이드 안내 모달 -->
+  <div id="firebaseGuideModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-cloud text-amber-500"></i> 스마트폰 실시간 연동 방법
+        </h3>
+        <button onclick="closeFirebaseGuideModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
+        <p class="font-bold text-slate-800">Q. 왜 스마트폰에서 담아도 PC 화면에 실시간으로 안 합쳐지나요?</p>
+        <p>GitHub Pages는 화면만 보여주는 정적 웹 호스팅이기 때문에, 다른 스마트폰과 PC 간 데이터를 실시간으로 이어주는 <b>무료 클라우드 데이터베이스(Google Firebase)</b> 설정이 필요합니다.</p>
+        
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <p class="font-bold text-amber-700">💡 3분 만에 무료로 연동하는 방법:</p>
+          <ol class="list-decimal pl-4 space-y-1">
+            <li><b>console.firebase.google.com</b>에 구글 로그인 후 [프로젝트 만들기]</li>
+            <li>[Cloud Firestore] 메뉴에서 [데이터베이스 만들기] (테스트 모드 시작)</li>
+            <li>[프로젝트 설정]에서 웹 앱(`</>`)을 등록하고 나오는 <b>firebaseConfig 6줄</b>을 복사</li>
+            <li>`index.html` 파일 상단의 `FIREBASE_CONFIG` 란에 붙여넣고 GitHub에 Push!</li>
+          </ol>
+        </div>
+        <p class="text-[11px] text-slate-400">* 자세한 캡처 가이드는 함께 제공된 <b>firebase_realtime_setup_guide.md</b> 파일을 참고하세요.</p>
+      </div>
+      <button onclick="closeFirebaseGuideModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+        확인 완료
+      </button>
     </div>
   </div>
 
@@ -281,8 +329,22 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // =========================================================================
+    // ⭐️ [필수] 스마트폰-PC 간 전 기기 실시간 동기화를 위한 Firebase 설정 키 ⭐️
+    // Firebase 콘솔에서 발급받은 설정값을 아래 따옴표 안에 넣어주시면
+    // QR코드로 접속한 모든 학생과 교실 PC가 실시간으로 100% 자동 연동됩니다!
+    // =========================================================================
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyA_Ohju_rI9VHmY8JLNGN2ENyv38WLdnKc",
+      authDomain: "afterschool-order.firebaseapp.com",
+      projectId: "afterschool-order",
+      storageBucket: "afterschool-order.firebasestorage.app",
+      messagingSenderId: "230836149524",
+      appId: "1:230836149524:web:ab2e74697f31dfa7c67601"
+    };
+    // =========================================================================
 
     // 1. 카테고리별 분류 및 기본 메뉴 목록 (images/메뉴명.jpg 매칭)
     const defaultMenus = [
@@ -412,7 +474,7 @@
       { id: 107, category: "토핑", name: "청양고추", price: 300, img: "images/청양고추.jpg" }
     ];
 
-    // LocalStorage 지속성 로더 헬퍼
+    // LocalStorage 지속성 로더
     function getStoredMenus() {
       try {
         const saved = localStorage.getItem('hansot_menus_v3');
@@ -421,7 +483,7 @@
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
       } catch (e) {
-        console.warn("로컬 메뉴 로드 오류:", e);
+        console.warn(e);
       }
       return [...defaultMenus];
     }
@@ -429,12 +491,9 @@
     function getStoredStudents() {
       try {
         const saved = localStorage.getItem('hansot_saved_students');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
-        }
+        if (saved) return JSON.parse(saved);
       } catch (e) {
-        console.warn("로컬 학생 로드 오류:", e);
+        console.warn(e);
       }
       return [];
     }
@@ -442,54 +501,31 @@
     function getStoredOrders() {
       try {
         const saved = localStorage.getItem('hansot_orders');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
-        }
+        if (saved) return JSON.parse(saved);
       } catch (e) {
-        console.warn("로컬 주문 로드 오류:", e);
+        console.warn(e);
       }
       return [];
     }
 
-    function saveLocalMenus(data) {
-      try {
-        localStorage.setItem('hansot_menus_v3', JSON.stringify(data));
-      } catch (e) {
-        console.error("메뉴 localStorage 저장 실패:", e);
-      }
-    }
+    function saveLocalMenus(data) { localStorage.setItem('hansot_menus_v3', JSON.stringify(data)); }
+    function saveLocalStudents(data) { localStorage.setItem('hansot_saved_students', JSON.stringify(data)); }
+    function saveLocalOrders(data) { localStorage.setItem('hansot_orders', JSON.stringify(data)); }
 
-    function saveLocalStudents(data) {
-      try {
-        localStorage.setItem('hansot_saved_students', JSON.stringify(data));
-      } catch (e) {
-        console.error("학생 목록 localStorage 저장 실패:", e);
-      }
-    }
-
-    function saveLocalOrders(data) {
-      try {
-        localStorage.setItem('hansot_orders', JSON.stringify(data));
-      } catch (e) {
-        console.error("주문 localStorage 저장 실패:", e);
-      }
-    }
-
-    // State variables
+    // State Variables
     let menus = getStoredMenus();
     let orders = getStoredOrders(); 
     let currentUserName = localStorage.getItem('hansot_current_user') || "";
     let savedStudents = getStoredStudents();
     let selectedCategory = "도시락";
     let isConnected = false;
-    let authUser = null;
+    let db = null;
     let confirmCallback = null;
 
     const BUDGET_LIMIT = 8000;
     const ADMIN_PASS = "1234";
 
-    // Custom Notice dialog (Replaces alert())
+    // Custom Modal Helpers
     window.showNotice = function(message, title = "안내", type = "info") {
       const modal = document.getElementById('customNoticeModal');
       const titleEl = document.getElementById('noticeTitle');
@@ -520,7 +556,6 @@
       document.getElementById('customNoticeModal').classList.add('hidden');
     };
 
-    // Custom Confirm dialog (Replaces confirm())
     window.showConfirm = function(message, callback, title = "확인 요청") {
       confirmCallback = callback;
       document.getElementById('confirmTitle').innerText = title;
@@ -536,50 +571,37 @@
       confirmCallback = null;
     };
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'hansot-order-app';
-    const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-
-    let db = null;
-    let auth = null;
-
+    // Firebase 연동 및 실시간 리스너 초기화
     async function initCloudSync() {
       const syncLabel = document.getElementById('syncStatusLabel');
       const syncDot = document.getElementById('syncDot');
+      const warningBanner = document.getElementById('localWarningBanner');
 
-      // 1) 초기 로컬 저장된 데이터로 즉시 화면 표시 (깜빡임 방지 및 오프라인 보장)
       renderStudentList();
       renderMenus();
       renderApp();
 
-      if (!rawFirebaseConfig) {
-        syncLabel.innerText = "로컬 영구 저장 모드 (새로고침 유지)";
-        syncDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+      // Firebase 키가 설정되었는지 확인
+      const hasFirebaseKey = Boolean(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+
+      if (!hasFirebaseKey) {
+        syncLabel.innerText = "로컬 모드 (기기간 실시간 연동 미설정)";
+        syncDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+        warningBanner.classList.remove('hidden');
         return;
       }
 
       try {
-        const firebaseConfig = JSON.parse(rawFirebaseConfig);
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
+        const app = initializeApp(FIREBASE_CONFIG);
         db = getFirestore(app);
-
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-        authUser = auth.currentUser;
-
-        if (!authUser) {
-          throw new Error("Authentication failed");
-        }
-
         isConnected = true;
-        syncLabel.innerText = "실시간 클라우드 동기화 켜짐";
-        syncDot.className = "w-2 h-2 rounded-full bg-emerald-500 pulse-dot";
 
-        // Firebase Orders 동기화
-        const ordersCol = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+        syncLabel.innerText = "🟢 전 기기 실시간 동기화 연결됨";
+        syncDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot";
+        warningBanner.classList.add('hidden');
+
+        // 1. 주문 데이터 실시간 동기화
+        const ordersCol = collection(db, 'orders');
         onSnapshot(ordersCol, (snapshot) => {
           orders = snapshot.docs.map(docSnap => ({
             id: docSnap.id,
@@ -589,10 +611,12 @@
           renderApp();
         }, (err) => {
           console.error("Orders listener error:", err);
+          syncLabel.innerText = "동기화 오류 (Firestore 규칙 확인 필요)";
+          syncDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
         });
 
-        // Firebase Students 동기화
-        const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+        // 2. 학생 목록 실시간 동기화
+        const studentsCol = collection(db, 'students');
         onSnapshot(studentsCol, (snapshot) => {
           const list = snapshot.docs.map(docSnap => docSnap.data().name).filter(Boolean);
           if (list.length > 0) {
@@ -605,8 +629,8 @@
           console.error("Students listener error:", err);
         });
 
-        // Firebase Custom Menus 동기화
-        const menuConfigDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menus');
+        // 3. 관리자 메뉴 카탈로그 실시간 동기화
+        const menuConfigDoc = doc(db, 'settings', 'menus');
         onSnapshot(menuConfigDoc, (docSnap) => {
           if (docSnap.exists() && Array.isArray(docSnap.data().list) && docSnap.data().list.length > 0) {
             menus = docSnap.data().list;
@@ -619,10 +643,11 @@
         });
 
       } catch (err) {
-        console.warn("Cloud connection fallback to local storage:", err);
+        console.error("Firebase connection error:", err);
         isConnected = false;
-        syncLabel.innerText = "로컬 영구 저장 모드";
-        syncDot.className = "w-2 h-2 rounded-full bg-amber-500";
+        syncLabel.innerText = "클라우드 연결 실패 (로컬 모드)";
+        syncDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        warningBanner.classList.remove('hidden');
       }
     }
 
@@ -642,10 +667,9 @@
       saveLocalStudents(savedStudents);
       renderStudentList();
 
-      if (isConnected && db && authUser) {
+      if (isConnected && db) {
         try {
-          const studentDoc = doc(db, 'artifacts', appId, 'public', 'data', 'students', val);
-          await setDoc(studentDoc, { name: val, createdAt: Date.now() });
+          await setDoc(doc(db, 'students', val), { name: val, createdAt: Date.now() });
         } catch (e) {
           console.error(e);
         }
@@ -670,10 +694,9 @@
         saveLocalStudents(savedStudents);
         renderStudentList();
 
-        if (isConnected && db && authUser) {
+        if (isConnected && db) {
           try {
-            const studentDoc = doc(db, 'artifacts', appId, 'public', 'data', 'students', name);
-            await deleteDoc(studentDoc);
+            await deleteDoc(doc(db, 'students', name));
           } catch (err) {
             console.error(err);
           }
@@ -809,13 +832,13 @@
 
       const existing = orders.find(o => o.userName === currentUserName && o.menuName === menuName);
 
-      if (isConnected && db && authUser) {
+      if (isConnected && db) {
         try {
           if (existing) {
-            const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', existing.id);
+            const orderRef = doc(db, 'orders', existing.id);
             await updateDoc(orderRef, { count: existing.count + 1, updatedAt: Date.now() });
           } else {
-            const ordersCol = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+            const ordersCol = collection(db, 'orders');
             await addDoc(ordersCol, {
               userName: currentUserName,
               menuName: menuName,
@@ -827,10 +850,10 @@
           }
         } catch (err) {
           console.error("Add order error:", err);
-          showNotice("주문 추가 중 오류가 발생했습니다.", "오류", "error");
+          showNotice("클라우드 주문 저장 실패. Firestore 규칙을 확인해주세요.", "동기화 오류", "error");
         }
       } else {
-        // Local mode fallback
+        // 로컬 모드 Fallback
         if (existing) {
           existing.count += 1;
         } else {
@@ -859,9 +882,9 @@
         }
       }
 
-      if (isConnected && db && authUser) {
+      if (isConnected && db) {
         try {
-          const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', item.id);
+          const orderRef = doc(db, 'orders', item.id);
           if (item.count + delta <= 0) {
             await deleteDoc(orderRef);
           } else {
@@ -884,10 +907,9 @@
       const item = orders.find(o => o.id === orderId);
       if (!item || item.userName !== currentUserName) return;
 
-      if (isConnected && db && authUser) {
+      if (isConnected && db) {
         try {
-          const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', item.id);
-          await deleteDoc(orderRef);
+          await deleteDoc(doc(db, 'orders', item.id));
         } catch (err) {
           console.error("Delete order error:", err);
         }
@@ -1005,9 +1027,9 @@
 
     window.clearAllOrdersPrompt = function() {
       showConfirm("모든 학생의 주문 취합 내역을 전부 초기화하시겠습니까?", async () => {
-        if (isConnected && db && authUser) {
+        if (isConnected && db) {
           try {
-            const deletePromises = orders.map(o => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', o.id)));
+            const deletePromises = orders.map(o => deleteDoc(doc(db, 'orders', o.id)));
             await Promise.all(deletePromises);
           } catch (err) {
             console.error("Clear orders error:", err);
@@ -1087,9 +1109,9 @@
       });
     };
 
-    window.closeQRModal = function() {
-      document.getElementById('qrModal').classList.add('hidden');
-    };
+    window.closeQRModal = function() { document.getElementById('qrModal').classList.add('hidden'); };
+    window.openFirebaseGuideModal = function() { document.getElementById('firebaseGuideModal').classList.remove('hidden'); };
+    window.closeFirebaseGuideModal = function() { document.getElementById('firebaseGuideModal').classList.add('hidden'); };
 
     window.openAdminModal = function() {
       document.getElementById('adminModal').classList.remove('hidden');
@@ -1098,9 +1120,7 @@
       document.getElementById('adminPassword').value = "";
     };
 
-    window.closeAdminModal = function() {
-      document.getElementById('adminModal').classList.add('hidden');
-    };
+    window.closeAdminModal = function() { document.getElementById('adminModal').classList.add('hidden'); };
 
     window.verifyAdminPassword = function() {
       const pass = document.getElementById('adminPassword').value;
@@ -1219,7 +1239,7 @@
             const img = new Image();
             img.onload = function() {
               const canvas = document.createElement('canvas');
-              const MAX_SIZE = 120; // 10KB 내외로 가볍게 압축
+              const MAX_SIZE = 120;
               let width = img.width;
               let height = img.height;
 
@@ -1248,7 +1268,6 @@
       }
     };
 
-    // ⭐️ 관리자 메뉴 수정사항을 localStorage 및 클라우드에 영구 저장하는 핵심 함수
     window.saveAdminChanges = async function() {
       const cats = document.querySelectorAll('.admin-cat');
       const names = document.querySelectorAll('.admin-name');
@@ -1274,14 +1293,11 @@
       }
 
       menus = updated;
-      // 1. 브라우저 localStorage에 영구 보존
       saveLocalMenus(menus);
 
-      // 2. 클라우드 연결 상태인 경우 Firebase에도 백업 동기화
-      if (isConnected && db && authUser) {
+      if (isConnected && db) {
         try {
-          const menuDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menus');
-          await setDoc(menuDoc, { list: menus, updatedAt: Date.now() });
+          await setDoc(doc(db, 'settings', 'menus'), { list: menus, updatedAt: Date.now() });
         } catch (err) {
           console.error("Save menus cloud error:", err);
         }
@@ -1290,18 +1306,17 @@
       renderMenus();
       renderApp();
       closeAdminModal();
-      showNotice("메뉴 수정사항이 성공적으로 저장되었습니다!\n이제 웹페이지를 새로고침(F5)해도 변경된 내용이 그대로 유지됩니다.", "저장 완료", "success");
+      showNotice("메뉴 수정사항이 성공적으로 저장되었습니다!\n모든 기기에 실시간 반영됩니다.", "저장 완료", "success");
     };
 
     window.resetToDefaultMenusPrompt = function() {
-      showConfirm("모든 메뉴를 최초의 기본 한솥 메뉴 목록으로 복원하시겠습니까?\n(직접 추가하거나 수정한 메뉴는 초기화됩니다)", async () => {
+      showConfirm("모든 메뉴를 최초의 기본 한솥 메뉴 목록으로 복원하시겠습니까?", async () => {
         menus = [...defaultMenus];
         saveLocalMenus(menus);
 
-        if (isConnected && db && authUser) {
+        if (isConnected && db) {
           try {
-            const menuDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menus');
-            await setDoc(menuDoc, { list: defaultMenus, updatedAt: Date.now() });
+            await setDoc(doc(db, 'settings', 'menus'), { list: defaultMenus, updatedAt: Date.now() });
           } catch (err) {
             console.error("Reset error:", err);
           }
