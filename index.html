@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>한솥도시락 실시간 공동 주문 시스템</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+    body { font-family: 'Pretendard', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .admin-menu-item.dragging { opacity: 0.35; }
+    .admin-menu-item.drag-over { border-top: 3px solid #eab308; }
+    .pulse-dot {
+      animation: pulseAnimation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseAnimation {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-16 antialiased">
+
+  <header class="bg-amber-400 text-slate-900 shadow-md sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-bowl-rice text-2xl text-amber-800"></i>
+        <div>
+          <h1 class="text-lg md:text-xl font-extrabold tracking-tight">방과후 한솥 실시간 주문기</h1>
+          <div class="flex items-center gap-1.5 text-[11px] text-amber-900 font-medium">
+            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-600 pulse-dot"></span>
+            <span id="syncStatusLabel">시스템 로딩 중...</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button onclick="openQRModal()" class="px-3 py-1.5 bg-white text-xs font-bold rounded-lg shadow-sm hover:bg-amber-50 flex items-center gap-1.5 border border-amber-500 transition active:scale-95">
+          <i class="fa-solid fa-qrcode text-amber-600"></i> <span class="hidden sm:inline">모바일</span> QR코드
+        </button>
+        <button onclick="openAdminModal()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-slate-700 flex items-center gap-1.5 transition active:scale-95">
+          <i class="fa-solid fa-gear"></i> 관리자
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- 좌측: 학생 선택 및 메뉴 카탈로그 (2열 차지) -->
+    <div class="lg:col-span-2 space-y-5">
+
+      <!-- 주문자 이름 선택 섹션 -->
+      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <i class="fa-solid fa-id-card text-amber-500 mr-1"></i> 주문자 학생 선택 (본인 이름 클릭)
+          </label>
+          <span class="text-[11px] text-slate-400">등록된 이름과 주문은 영구 저장됩니다</span>
+        </div>
+        
+        <div class="flex gap-2 mb-3">
+          <input type="text" id="newStudentInput" placeholder="새 학생 이름 추가 (예: 김철수)" 
+                 onkeypress="if(event.key === 'Enter') addNewStudent()"
+                 class="flex-1 border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition">
+          <button onclick="addNewStudent()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-sm transition shrink-0 active:scale-95">
+            <i class="fa-solid fa-user-plus mr-1"></i> 추가
+          </button>
+        </div>
+
+        <div id="studentListContainer" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
+          <span class="text-xs text-slate-400 py-1">학생 목록을 불러오는 중...</span>
+        </div>
+
+        <div class="mt-3 flex flex-wrap justify-between items-center text-xs border-t border-slate-100 pt-3 gap-2">
+          <span id="currentStatusText" class="text-slate-500 font-medium">이름을 선택해야 메뉴를 담을 수 있습니다.</span>
+          <span id="userBudgetBadge" class="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+            1인 한도: 8,000원
+          </span>
+        </div>
+      </section>
+
+      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+          <h2 class="text-base md:text-lg font-bold flex items-center gap-2">
+            <i class="fa-solid fa-utensils text-amber-500"></i> 메뉴 선택
+          </h2>
+          <div class="relative w-full sm:w-48">
+            <input type="text" id="menuSearch" oninput="renderMenus()" placeholder="메뉴 검색..." 
+                   class="text-xs border border-slate-300 rounded-xl pl-8 pr-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+          </div>
+        </div>
+
+        <!-- 카테고리 스크롤 바 -->
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-4 border-b border-slate-100 text-xs font-semibold">
+          <button onclick="setCategory('도시락')" class="category-btn px-3 py-1.5 rounded-full bg-amber-500 text-white shrink-0 shadow-sm" data-category="도시락">도시락</button>
+          <button onclick="setCategory('보울')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="보울">보울</button>
+          <button onclick="setCategory('덮밥')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="덮밥">덮밥</button>
+          <button onclick="setCategory('비빔밥')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="비빔밥">비빔밥</button>
+          <button onclick="setCategory('반찬')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="반찬">반찬</button>
+          <button onclick="setCategory('밥')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="밥">밥</button>
+          <button onclick="setCategory('소스/시즈닝')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="소스/시즈닝">소스/시즈닝</button>
+          <button onclick="setCategory('사이드')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="사이드">사이드</button>
+          <button onclick="setCategory('토핑')" class="category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0" data-category="토핑">토핑</button>
+        </div>
+
+        <!-- 메뉴 목록 카드 컨테이너 -->
+        <div id="menuContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[580px] overflow-y-auto pr-1">
+        </div>
+      </section>
+    </div>
+
+    <!-- 우측: 내 장바구니 및 교실 실시간 취합 요약 (1열 차지) -->
+    <div class="space-y-5">
+      
+      <!-- 내 장바구니 -->
+      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-sm font-bold mb-3 flex items-center justify-between">
+          <span class="flex items-center gap-1.5 text-slate-800">
+            <i class="fa-solid fa-basket-shopping text-amber-500"></i> 나의 담은 메뉴
+          </span>
+          <span id="myTotalPrice" class="text-xs font-extrabold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">0원 / 8,000원</span>
+        </h2>
+        <div id="myOrderList" class="space-y-2 text-xs max-h-52 overflow-y-auto pr-1">
+          <div class="text-slate-400 py-4 text-center">선택된 메뉴가 없습니다.</div>
+        </div>
+      </section>
+
+      <!-- 실시간 전체 취합 요약표 -->
+      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-3">
+          <div>
+            <h2 class="text-sm font-bold flex items-center gap-1.5 text-slate-800">
+              <i class="fa-solid fa-clipboard-list text-amber-500"></i> 실시간 주문 집계
+            </h2>
+            <p class="text-[11px] text-slate-400 mt-0.5">전체 주문이 실시간 합산 집계됩니다</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="clearAllOrdersPrompt()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1 font-semibold transition">
+              <i class="fa-solid fa-trash-can"></i> 전체 비우기
+            </button>
+            <button onclick="copySummaryText()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-300 flex items-center gap-1 font-semibold transition">
+              <i class="fa-solid fa-copy"></i> 복사
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-60 overflow-y-auto border border-slate-100 rounded-xl">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 text-slate-600">
+              <tr>
+                <th class="py-2.5 px-3">메뉴명 (내림차순)</th>
+                <th class="py-2.5 px-3 text-center w-14">수량</th>
+              </tr>
+            </thead>
+            <tbody id="summaryTableBody" class="divide-y divide-slate-100">
+              <tr><td colspan="2" class="text-center py-6 text-slate-400">집계된 주문이 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-500">총 합계</span>
+          <span id="grandTotal" class="text-base font-black text-rose-600">0원 (0개)</span>
+        </div>
+      </section>
+
+      <!-- 학생별 주문 상세 현황 -->
+      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-sm font-bold mb-3 flex items-center justify-between text-slate-800">
+          <span class="flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-amber-500"></i> 학생별 상세 현황
+          </span>
+          <span id="activeStudentCount" class="text-xs text-slate-400">참여 0명</span>
+        </h2>
+        <div id="allStudentsList" class="space-y-2.5 text-xs max-h-64 overflow-y-auto pr-1">
+          <div class="text-slate-400 text-center py-4">주문한 학생이 없습니다.</div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 모바일 접속 QR 코드 모달 -->
+  <div id="qrModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-qrcode"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-800">스마트폰 실시간 참여 QR</h3>
+      <p class="text-xs text-slate-500">휴대폰 기본 카메라 앱으로 QR코드를 스캔하면 현재 웹페이지로 즉시 접속됩니다.</p>
+      <div id="qrcode" class="flex justify-center my-4 p-3 bg-slate-50 rounded-2xl border border-slate-200"></div>
+      <button onclick="closeQRModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 rounded-xl text-sm transition">닫기</button>
+    </div>
+  </div>
+
+  <!-- 관리자 모달 -->
+  <div id="adminModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-amber-500"></i> 메뉴 카탈로그 관리자
+        </h3>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- 관리자 비밀번호 인증 -->
+      <div id="adminAuthSection" class="py-10 text-center space-y-3">
+        <p class="text-sm text-slate-600">관리자 비밀번호를 입력해주세요. (기본 비밀번호: <b>1234</b>)</p>
+        <div class="flex justify-center gap-2">
+          <input type="password" id="adminPassword" placeholder="비밀번호" 
+                 onkeypress="if(event.key === 'Enter') verifyAdminPassword()"
+                 class="border border-slate-300 rounded-xl px-4 py-2 text-sm w-44 text-center focus:ring-2 focus:ring-amber-400 focus:outline-none">
+          <button onclick="verifyAdminPassword()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2 rounded-xl text-sm transition">
+            확인
+          </button>
+        </div>
+      </div>
+
+      <!-- 메뉴 편집 화면 -->
+      <div id="adminEditSection" class="hidden flex-1 overflow-hidden flex flex-col">
+        <div class="flex justify-between items-center mb-2.5">
+          <span class="text-xs text-slate-500">핸들을 드래그해 순서를 바꿀 수 있습니다. 저장 시 새로고침 후에도 영구 유지됩니다.</span>
+          <button onclick="addNewMenuRow()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition">
+            + 새 메뉴 추가
+          </button>
+        </div>
+        <div id="adminMenuList" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs border border-slate-200 rounded-xl p-3 bg-slate-50">
+        </div>
+        <div class="pt-4 mt-2 border-t border-slate-200 flex justify-end gap-2">
+          <button onclick="resetToDefaultMenusPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-rose-200 transition">
+            기본 한솥 메뉴로 리셋
+          </button>
+          <button onclick="saveAdminChanges()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm transition">
+            저장하고 전체 반영
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 공용 커스텀 알림 모달 -->
+  <div id="customNoticeModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 max-w-sm w-full text-center space-y-3 shadow-xl">
+      <div id="noticeIcon" class="w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-amber-100 text-amber-700">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+      <h4 id="noticeTitle" class="text-base font-bold text-slate-800">알림</h4>
+      <p id="noticeMessage" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed"></p>
+      <button onclick="closeNoticeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs transition">
+        확인
+      </button>
+    </div>
+  </div>
+
+  <!-- 공용 커스텀 확인 모달 -->
+  <div id="customConfirmModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-5 max-w-sm w-full text-center space-y-3 shadow-xl">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-rose-100 text-rose-600">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h4 id="confirmTitle" class="text-base font-bold text-slate-800">확인</h4>
+      <p id="confirmMessage" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed"></p>
+      <div class="flex gap-2 pt-2">
+        <button onclick="handleConfirmResponse(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
+          취소
+        </button>
+        <button onclick="handleConfirmResponse(true)" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition">
+          진행
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 1. 카테고리별 분류 및 기본 메뉴 목록 (images/메뉴명.jpg 매칭)
+    const defaultMenus = [
+      // 1) 도시락
+      { id: 1, category: "도시락", name: "카츠카츠 고기고기", price: 8000, img: "images/카츠카츠 고기고기.jpg" },
+      { id: 2, category: "도시락", name: "새치 고기고기", price: 7800, img: "images/새치 고기고기.jpg" },
+      { id: 3, category: "도시락", name: "돈까스도련님 고기고기", price: 7300, img: "images/돈까스도련님 고기고기.jpg" },
+      { id: 4, category: "도시락", name: "돈치 고기고기", price: 6800, img: "images/돈치 고기고기.jpg" },
+      { id: 5, category: "도시락", name: "동백", price: 6700, img: "images/동백.jpg" },
+      { id: 6, category: "도시락", name: "돈치스팸", price: 5500, img: "images/돈치스팸.jpg" },
+      { id: 7, category: "도시락", name: "칠리 찹쌀탕수육도련님", price: 5000, img: "images/칠리 찹쌀탕수육도련님.jpg" },
+      { id: 8, category: "도시락", name: "돈까스도련님", price: 5200, img: "images/돈까스도련님.jpg" },
+      { id: 9, category: "도시락", name: "제육 돈까스도련님", price: 5200, img: "images/제육 돈까스도련님.jpg" },
+      { id: 10, category: "도시락", name: "송정식 떡갈비", price: 7200, img: "images/송정식 떡갈비.jpg" },
+      { id: 11, category: "도시락", name: "치킨제육", price: 5500, img: "images/치킨제육.jpg" },
+      { id: 12, category: "도시락", name: "돈카츠(데미그라스)", price: 4900, img: "images/돈카츠(데미그라스).jpg" },
+
+      // 2) 보울
+      { id: 13, category: "보울", name: "메가치킨마요", price: 6600, img: "images/메가치킨마요.jpg" },
+      { id: 14, category: "보울", name: "왕치킨마요", price: 5600, img: "images/왕치킨마요.jpg" },
+      { id: 15, category: "보울", name: "빅치킨마요", price: 4600, img: "images/빅치킨마요.jpg" },
+      { id: 16, category: "보울", name: "치킨마요", price: 3900, img: "images/치킨마요.jpg" },
+      { id: 17, category: "보울", name: "스팸마요", price: 4400, img: "images/스팸마요.jpg" },
+      { id: 18, category: "보울", name: "참치마요", price: 3800, img: "images/참치마요.jpg" },
+      { id: 19, category: "보울", name: "스팸 김치볶음밥", price: 5200, img: "images/스팸 김치볶음밥.jpg" },
+      { id: 20, category: "보울", name: "김치볶음밥", price: 4400, img: "images/김치볶음밥.jpg" },
+      { id: 21, category: "보울", name: "부대찌개(밥포함)", price: 6500, img: "images/부대찌개(밥포함).jpg" },
+      { id: 22, category: "보울", name: "묵은지 김치찌개(밥포함)", price: 6000, img: "images/묵은지 김치찌개(밥포함).jpg" },
+      { id: 23, category: "보울", name: "돈까스 카레", price: 5100, img: "images/돈까스 카레.jpg" },
+
+      // 3) 덮밥
+      { id: 24, category: "덮밥", name: "왕카레치킨 덮밥", price: 6700, img: "images/왕카레치킨 덮밥.jpg" },
+      { id: 25, category: "덮밥", name: "돼지불백 덮밥", price: 5900, img: "images/돼지불백 덮밥.jpg" },
+      { id: 26, category: "덮밥", name: "왕김치돈까스 덮밥", price: 6700, img: "images/왕김치돈까스 덮밥.jpg" },
+      { id: 27, category: "덮밥", name: "제육 많이 덮밥", price: 6500, img: "images/제육 많이 덮밥.jpg" },
+      { id: 28, category: "덮밥", name: "빅 제육 많이 덮밥", price: 7500, img: "images/빅 제육 많이 덮밥.jpg" },
+      { id: 29, category: "덮밥", name: "왕카레돈까스 덮밥", price: 6700, img: "images/왕카레돈까스 덮밥.jpg" },
+      { id: 30, category: "덮밥", name: "돈까스 덮밥", price: 4700, img: "images/돈까스 덮밥.jpg" },
+      { id: 31, category: "덮밥", name: "숯불직화구이 덮밥", price: 6500, img: "images/숯불직화구이 덮밥.jpg" },
+      { id: 32, category: "덮밥", name: "김치 제육 덮밥", price: 5200, img: "images/김치 제육 덮밥.jpg" },
+      { id: 33, category: "덮밥", name: "오리지널 치즈 닭갈비덮밥", price: 6500, img: "images/오리지널 치즈 닭갈비덮밥.jpg" },
+      { id: 34, category: "덮밥", name: "핫 치즈 닭갈비덮밥", price: 6500, img: "images/핫 치즈 닭갈비덮밥.jpg" },
+      { id: 35, category: "덮밥", name: "김치 참치 덮밥", price: 4900, img: "images/김치 참치 덮밥.jpg" },
+
+      // 4) 비빔밥
+      { id: 36, category: "비빔밥", name: "열무 감초고추장 비빔밥", price: 5000, img: "images/열무 감초고추장 비빔밥.jpg" },
+      { id: 37, category: "비빔밥", name: "열무 두부강된장 비빔밥", price: 5500, img: "images/열무 두부강된장 비빔밥.jpg" },
+      { id: 38, category: "비빔밥", name: "소불고기 감초고추장 비빔밥", price: 6000, img: "images/소불고기 감초고추장 비빔밥.jpg" },
+      { id: 39, category: "비빔밥", name: "시골제육 두부강된장 비빔밥", price: 6500, img: "images/시골제육 두부강된장 비빔밥.jpg" },
+      { id: 40, category: "비빔밥", name: "참치야채 감초고추장 비빔밥", price: 4000, img: "images/참치야채 감초고추장 비빔밥.jpg" },
+
+      // 5) 반찬
+      { id: 41, category: "반찬", name: "단품 부대찌개(밥 없음)", price: 5200, img: "images/단품 부대찌개(밥 없음).jpg" },
+      { id: 42, category: "반찬", name: "단품 묵은지 김치찌개(밥 없음)", price: 4700, img: "images/단품 묵은지 김치찌개(밥 없음).jpg" },
+      { id: 43, category: "반찬", name: "단품 카레", price: 2900, img: "images/단품 카레.jpg" },
+      { id: 44, category: "반찬", name: "반찬 돈까스도련님", price: 4200, img: "images/반찬 돈까스도련님.jpg" },
+      { id: 45, category: "반찬", name: "반찬 치킨", price: 4000, img: "images/반찬 치킨.jpg" },
+      { id: 46, category: "반찬", name: "반찬 제육볶음", price: 3900, img: "images/반찬 제육볶음.jpg" },
+      { id: 47, category: "반찬", name: "반찬 돈까스", price: 2900, img: "images/반찬 돈까스.jpg" },
+      { id: 48, category: "반찬", name: "반찬 토네이도 소세지", price: 3200, img: "images/반찬 토네이도 소세지.jpg" },
+      { id: 49, category: "반찬", name: "반찬 고기고기", price: 3900, img: "images/반찬 고기고기.jpg" },
+      { id: 50, category: "반찬", name: "반찬 고등어 데리야끼", price: 3900, img: "images/반찬 고등어 데리야끼.jpg" },
+      { id: 51, category: "반찬", name: "집반찬 무말랭이", price: 3000, img: "images/집반찬 무말랭이.jpg" },
+      { id: 52, category: "반찬", name: "집반찬 볶음김치", price: 2500, img: "images/집반찬 볶음김치.jpg" },
+      { id: 53, category: "반찬", name: "집반찬 맛김치", price: 2500, img: "images/집반찬 맛김치.jpg" },
+      { id: 54, category: "반찬", name: "미니반찬 볶음김치", price: 500, img: "images/미니반찬 볶음김치.jpg" },
+      { id: 55, category: "반찬", name: "미니반찬 김치", price: 500, img: "images/미니반찬 김치.jpg" },
+      { id: 56, category: "반찬", name: "미니반찬 무생채", price: 500, img: "images/미니반찬 무생채.jpg" },
+      { id: 57, category: "반찬", name: "미니반찬 열무김치", price: 500, img: "images/미니반찬 열무김치.jpg" },
+      { id: 58, category: "반찬", name: "한솥 조미김", price: 100, img: "images/한솥 조미김.jpg" },
+
+      // 6) 밥
+      { id: 59, category: "밥", name: "12곡밥", price: 2100, img: "images/12곡밥.jpg" },
+      { id: 60, category: "밥", name: "발아현미밥", price: 1900, img: "images/발아현미밥.jpg" },
+      { id: 61, category: "밥", name: "한솥밥", price: 1200, img: "images/한솥밥.jpg" },
+
+      // 7) 소스/시즈닝
+      { id: 62, category: "소스/시즈닝", name: "한솥 허니버터시즈닝", price: 300, img: "images/한솥 허니버터시즈닝.jpg" },
+      { id: 63, category: "소스/시즈닝", name: "한솥 치즈버터시즈닝", price: 300, img: "images/한솥 치즈버터시즈닝.jpg" },
+      { id: 64, category: "소스/시즈닝", name: "생와사비", price: 300, img: "images/생와사비.jpg" },
+      { id: 65, category: "소스/시즈닝", name: "한솥 케이준소스", price: 600, img: "images/한솥 케이준소스.jpg" },
+      { id: 66, category: "소스/시즈닝", name: "한솥 양념치킨소스", price: 600, img: "images/한솥 양념치킨소스.jpg" },
+      { id: 67, category: "소스/시즈닝", name: "한솥 미니탕수육소스", price: 600, img: "images/한솥 미니탕수육소스.jpg" },
+      { id: 68, category: "소스/시즈닝", name: "한솥 타르타르소스", price: 400, img: "images/한솥 타르타르소스.jpg" },
+      { id: 69, category: "소스/시즈닝", name: "한솥 라유소스", price: 300, img: "images/한솥 라유소스.jpg" },
+      { id: 70, category: "소스/시즈닝", name: "한솥 돈부리소스", price: 500, img: "images/한솥 돈부리소스.jpg" },
+      { id: 71, category: "소스/시즈닝", name: "한솥 덮밥용 소이소스", price: 500, img: "images/한솥 덮밥용 소이소스.jpg" },
+      { id: 72, category: "소스/시즈닝", name: "한솥 마요드레싱 소스", price: 200, img: "images/한솥 마요드레싱 소스.jpg" },
+      { id: 73, category: "소스/시즈닝", name: "일회용 참기름 소스", price: 200, img: "images/일회용 참기름 소스.jpg" },
+      { id: 74, category: "소스/시즈닝", name: "토마토 케찹 소스", price: 100, img: "images/토마토 케찹 소스.jpg" },
+      { id: 75, category: "소스/시즈닝", name: "한솥 양식소스", price: 300, img: "images/한솥 양식소스.jpg" },
+      { id: 76, category: "소스/시즈닝", name: "한솥 칠리소스", price: 500, img: "images/한솥 칠리소스.jpg" },
+      { id: 77, category: "소스/시즈닝", name: "한솥 치킨마요소스", price: 500, img: "images/한솥 치킨마요소스.jpg" },
+      { id: 78, category: "소스/시즈닝", name: "한솥 빅치킨마요소스", price: 600, img: "images/한솥 빅치킨마요소스.jpg" },
+      { id: 79, category: "소스/시즈닝", name: "한솥 두부강된장장소스", price: 1800, img: "images/한솥 두부강된장장소스.jpg" },
+      { id: 80, category: "소스/시즈닝", name: "한솥 감초볶음고주창소스", price: 500, img: "images/한솥 감초볶음고주창소스.jpg" },
+
+      // 8) 사이드
+      { id: 81, category: "사이드", name: "해시 포테이토 스틱", price: 2000, img: "images/해시 포테이토 스틱.jpg" },
+      { id: 82, category: "사이드", name: "치즈버터 해시 포테이토 스틱", price: 2200, img: "images/치즈버터 해시 포테이토 스틱.jpg" },
+      { id: 83, category: "사이드", name: "허니버터 해시 포테이토 스틱", price: 2200, img: "images/허니버터 해시 포테이토 스틱.jpg" },
+      { id: 84, category: "사이드", name: "뉴 감자고로케", price: 2700, img: "images/뉴 감자고로케.jpg" },
+      { id: 85, category: "사이드", name: "미니 찹쌀핫도그(4개)", price: 2800, img: "images/미니 찹쌀핫도그(4개).jpg" },
+      { id: 86, category: "사이드", name: "미니 찹쌀탕수육+칠리소스", price: 2300, img: "images/미니 찹쌀탕수육+칠리소스.jpg" },
+      { id: 87, category: "사이드", name: "케이준후라이", price: 1900, img: "images/케이준후라이.jpg" },
+      { id: 88, category: "사이드", name: "꿀 치즈스틱", price: 2500, img: "images/꿀 치즈스틱.jpg" },
+      { id: 89, category: "사이드", name: "김피탕", price: 6700, img: "images/김피탕.jpg" },
+      { id: 90, category: "사이드", name: "크림닭강정(소)", price: 3900, img: "images/크림닭강정(소).jpg" },
+      { id: 91, category: "사이드", name: "한솥 닭강정(소)", price: 3500, img: "images/한솥 닭강정(소).jpg" },
+      { id: 92, category: "사이드", name: "후라이드 순살(소)_양념치킨소스", price: 4000, img: "images/후라이드 순살(소)_양념치킨소스.jpg" },
+      { id: 93, category: "사이드", name: "후라이드 순살(소)_케이준소스", price: 4000, img: "images/후라이드 순살(소)_케이준소스.jpg" },
+      { id: 94, category: "사이드", name: "후라이드 순살(중)", price: 7500, img: "images/후라이드 순살(중).jpg" },
+      { id: 95, category: "사이드", name: "제주녹차 미니꿀호떡", price: 2500, img: "images/제주녹차 미니꿀호떡.jpg" },
+      { id: 96, category: "사이드", name: "회오리 감자", price: 3500, img: "images/회오리 감자.jpg" },
+
+      // 9) 토핑
+      { id: 97, category: "토핑", name: "한입 송정식 떡갈비(3개)", price: 1100, img: "images/한입 송정식 떡갈비(3개).jpg" },
+      { id: 98, category: "토핑", name: "반달 돈까스", price: 1300, img: "images/반달 돈까스.jpg" },
+      { id: 99, category: "토핑", name: "청양 토네이도 소세지", price: 1500, img: "images/청양 토네이도 소세지.jpg" },
+      { id: 100, category: "토핑", name: "토네이도 소세지", price: 1500, img: "images/토네이도 소세지.jpg" },
+      { id: 101, category: "토핑", name: "새우후라이", price: 1600, img: "images/새우후라이.jpg" },
+      { id: 102, category: "토핑", name: "스팸(1개)", price: 1100, img: "images/스팸(1개).jpg" },
+      { id: 103, category: "토핑", name: "치킨(1개)", price: 1000, img: "images/치킨(1개).jpg" },
+      { id: 104, category: "토핑", name: "소불고기(50g)", price: 1700, img: "images/소불고기(50g).jpg" },
+      { id: 105, category: "토핑", name: "제육볶음(50g)", price: 1400, img: "images/제육볶음(50g).jpg" },
+      { id: 106, category: "토핑", name: "계란후라이", price: 1200, img: "images/계란후라이.jpg" },
+      { id: 107, category: "토핑", name: "청양고추", price: 300, img: "images/청양고추.jpg" }
+    ];
+
+    // LocalStorage 지속성 로더 헬퍼
+    function getStoredMenus() {
+      try {
+        const saved = localStorage.getItem('hansot_menus_v3');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn("로컬 메뉴 로드 오류:", e);
+      }
+      return [...defaultMenus];
+    }
+
+    function getStoredStudents() {
+      try {
+        const saved = localStorage.getItem('hansot_saved_students');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn("로컬 학생 로드 오류:", e);
+      }
+      return [];
+    }
+
+    function getStoredOrders() {
+      try {
+        const saved = localStorage.getItem('hansot_orders');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn("로컬 주문 로드 오류:", e);
+      }
+      return [];
+    }
+
+    function saveLocalMenus(data) {
+      try {
+        localStorage.setItem('hansot_menus_v3', JSON.stringify(data));
+      } catch (e) {
+        console.error("메뉴 localStorage 저장 실패:", e);
+      }
+    }
+
+    function saveLocalStudents(data) {
+      try {
+        localStorage.setItem('hansot_saved_students', JSON.stringify(data));
+      } catch (e) {
+        console.error("학생 목록 localStorage 저장 실패:", e);
+      }
+    }
+
+    function saveLocalOrders(data) {
+      try {
+        localStorage.setItem('hansot_orders', JSON.stringify(data));
+      } catch (e) {
+        console.error("주문 localStorage 저장 실패:", e);
+      }
+    }
+
+    // State variables
+    let menus = getStoredMenus();
+    let orders = getStoredOrders(); 
+    let currentUserName = localStorage.getItem('hansot_current_user') || "";
+    let savedStudents = getStoredStudents();
+    let selectedCategory = "도시락";
+    let isConnected = false;
+    let authUser = null;
+    let confirmCallback = null;
+
+    const BUDGET_LIMIT = 8000;
+    const ADMIN_PASS = "1234";
+
+    // Custom Notice dialog (Replaces alert())
+    window.showNotice = function(message, title = "안내", type = "info") {
+      const modal = document.getElementById('customNoticeModal');
+      const titleEl = document.getElementById('noticeTitle');
+      const msgEl = document.getElementById('noticeMessage');
+      const iconEl = document.getElementById('noticeIcon');
+
+      titleEl.innerText = title;
+      msgEl.innerText = message;
+
+      if (type === "warning") {
+        iconEl.className = "w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-amber-100 text-amber-600";
+        iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      } else if (type === "error") {
+        iconEl.className = "w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-rose-100 text-rose-600";
+        iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+      } else if (type === "success") {
+        iconEl.className = "w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-emerald-100 text-emerald-600";
+        iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+      } else {
+        iconEl.className = "w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-sky-100 text-sky-600";
+        iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+      }
+
+      modal.classList.remove('hidden');
+    };
+
+    window.closeNoticeModal = function() {
+      document.getElementById('customNoticeModal').classList.add('hidden');
+    };
+
+    // Custom Confirm dialog (Replaces confirm())
+    window.showConfirm = function(message, callback, title = "확인 요청") {
+      confirmCallback = callback;
+      document.getElementById('confirmTitle').innerText = title;
+      document.getElementById('confirmMessage').innerText = message;
+      document.getElementById('customConfirmModal').classList.remove('hidden');
+    };
+
+    window.handleConfirmResponse = function(isConfirmed) {
+      document.getElementById('customConfirmModal').classList.add('hidden');
+      if (isConfirmed && typeof confirmCallback === 'function') {
+        confirmCallback();
+      }
+      confirmCallback = null;
+    };
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'hansot-order-app';
+    const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+
+    let db = null;
+    let auth = null;
+
+    async function initCloudSync() {
+      const syncLabel = document.getElementById('syncStatusLabel');
+      const syncDot = document.getElementById('syncDot');
+
+      // 1) 초기 로컬 저장된 데이터로 즉시 화면 표시 (깜빡임 방지 및 오프라인 보장)
+      renderStudentList();
+      renderMenus();
+      renderApp();
+
+      if (!rawFirebaseConfig) {
+        syncLabel.innerText = "로컬 영구 저장 모드 (새로고침 유지)";
+        syncDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+        return;
+      }
+
+      try {
+        const firebaseConfig = JSON.parse(rawFirebaseConfig);
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+        authUser = auth.currentUser;
+
+        if (!authUser) {
+          throw new Error("Authentication failed");
+        }
+
+        isConnected = true;
+        syncLabel.innerText = "실시간 클라우드 동기화 켜짐";
+        syncDot.className = "w-2 h-2 rounded-full bg-emerald-500 pulse-dot";
+
+        // Firebase Orders 동기화
+        const ordersCol = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+        onSnapshot(ordersCol, (snapshot) => {
+          orders = snapshot.docs.map(docSnap => ({
+            id: docSnap.id,
+            ...docSnap.data()
+          }));
+          saveLocalOrders(orders);
+          renderApp();
+        }, (err) => {
+          console.error("Orders listener error:", err);
+        });
+
+        // Firebase Students 동기화
+        const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+        onSnapshot(studentsCol, (snapshot) => {
+          const list = snapshot.docs.map(docSnap => docSnap.data().name).filter(Boolean);
+          if (list.length > 0) {
+            savedStudents = list;
+            saveLocalStudents(savedStudents);
+          }
+          renderStudentList();
+          updateUserStatus();
+        }, (err) => {
+          console.error("Students listener error:", err);
+        });
+
+        // Firebase Custom Menus 동기화
+        const menuConfigDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menus');
+        onSnapshot(menuConfigDoc, (docSnap) => {
+          if (docSnap.exists() && Array.isArray(docSnap.data().list) && docSnap.data().list.length > 0) {
+            menus = docSnap.data().list;
+            saveLocalMenus(menus);
+          }
+          renderMenus();
+          renderApp();
+        }, (err) => {
+          console.error("Menus listener error:", err);
+        });
+
+      } catch (err) {
+        console.warn("Cloud connection fallback to local storage:", err);
+        isConnected = false;
+        syncLabel.innerText = "로컬 영구 저장 모드";
+        syncDot.className = "w-2 h-2 rounded-full bg-amber-500";
+      }
+    }
+
+    window.addNewStudent = async function() {
+      const input = document.getElementById('newStudentInput');
+      const val = input.value.trim();
+      if (!val) {
+        showNotice("학생 이름을 입력해주세요.", "입력 확인", "warning");
+        return;
+      }
+      if (savedStudents.includes(val)) {
+        showNotice("이미 등록된 학생 이름입니다.", "중복 안내", "warning");
+        return;
+      }
+
+      savedStudents.push(val);
+      saveLocalStudents(savedStudents);
+      renderStudentList();
+
+      if (isConnected && db && authUser) {
+        try {
+          const studentDoc = doc(db, 'artifacts', appId, 'public', 'data', 'students', val);
+          await setDoc(studentDoc, { name: val, createdAt: Date.now() });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      input.value = "";
+      selectStudent(val);
+    };
+
+    window.selectStudent = function(name) {
+      currentUserName = name;
+      localStorage.setItem('hansot_current_user', currentUserName);
+      updateUserStatus();
+      renderApp();
+      renderStudentList();
+    };
+
+    window.removeStudent = function(e, name) {
+      e.stopPropagation();
+      showConfirm(`[${name}] 학생을 목록에서 삭제하시겠습니까?`, async () => {
+        savedStudents = savedStudents.filter(s => s !== name);
+        saveLocalStudents(savedStudents);
+        renderStudentList();
+
+        if (isConnected && db && authUser) {
+          try {
+            const studentDoc = doc(db, 'artifacts', appId, 'public', 'data', 'students', name);
+            await deleteDoc(studentDoc);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        if (currentUserName === name) {
+          currentUserName = "";
+          localStorage.removeItem('hansot_current_user');
+          updateUserStatus();
+          renderApp();
+        }
+      });
+    };
+
+    function renderStudentList() {
+      const container = document.getElementById('studentListContainer');
+      container.innerHTML = "";
+      if (savedStudents.length === 0) {
+        container.innerHTML = `<span class="text-xs text-slate-400 py-1">등록된 학생이 없습니다. 상단에서 이름을 등록해주세요.</span>`;
+        return;
+      }
+      savedStudents.forEach(name => {
+        const isSelected = name === currentUserName;
+        const btn = document.createElement('div');
+        btn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer border transition-all ${
+          isSelected 
+            ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-sm ring-1 ring-amber-400 font-bold scale-[1.02]' 
+            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+        }`;
+        btn.onclick = () => selectStudent(name);
+        btn.innerHTML = `
+          <span>${name}</span>
+          <button onclick="removeStudent(event, '${name}')" class="text-slate-400 hover:text-rose-500 ml-1 rounded-full p-0.5" title="삭제">
+            <i class="fa-solid fa-xmark text-[11px]"></i>
+          </button>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function updateUserStatus() {
+      const statusText = document.getElementById('currentStatusText');
+      if (currentUserName) {
+        statusText.innerHTML = `현재 선택됨: <b class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">${currentUserName}</b> (메뉴 담기 가능)`;
+      } else {
+        statusText.innerText = "이름을 등록/선택해야 메뉴를 담을 수 있습니다.";
+      }
+    }
+
+    window.setCategory = function(categoryName) {
+      selectedCategory = categoryName;
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        if (btn.getAttribute('data-category') === categoryName) {
+          btn.className = "category-btn px-3 py-1.5 rounded-full bg-amber-500 text-white shrink-0 shadow-sm";
+        } else {
+          btn.className = "category-btn px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0";
+        }
+      });
+      renderMenus();
+    };
+
+    window.handleImgError = function(imageElement) {
+      imageElement.onerror = null;
+      imageElement.style.display = 'none';
+      if (imageElement.nextElementSibling) {
+        imageElement.nextElementSibling.classList.remove('hidden');
+      }
+    };
+
+    function renderMenus() {
+      const container = document.getElementById('menuContainer');
+      const search = document.getElementById('menuSearch').value.toLowerCase();
+      container.innerHTML = "";
+
+      const filtered = menus.filter(m => {
+        const matchesCategory = (m.category === selectedCategory);
+        const matchesSearch = m.name.toLowerCase().includes(search);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs">해당 카테고리에 조건과 일치하는 메뉴가 없습니다.</div>`;
+        return;
+      }
+
+      filtered.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "flex flex-col items-center p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-amber-400 transition shadow-sm group";
+        
+        div.innerHTML = `
+          <div class="relative w-48 h-48 mb-3 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <img src="${m.img}" onerror="handleImgError(this)" class="w-48 h-48 object-cover rounded-xl transition duration-300 group-hover:scale-105" alt="${m.name}">
+            <div class="hidden absolute inset-0 w-48 h-48 bg-gradient-to-br from-amber-50 to-amber-100 text-amber-800 rounded-xl flex flex-col items-center justify-center p-3 text-center border border-amber-200">
+              <i class="fa-solid fa-bowl-rice text-3xl mb-1 text-amber-600"></i>
+              <span class="text-xs font-bold leading-tight">${m.name}</span>
+            </div>
+          </div>
+          <div class="w-full flex items-center justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <span class="text-[11px] bg-slate-200/80 text-slate-700 px-2 py-0.5 rounded-full font-bold">${m.category || '기타'}</span>
+              <div class="text-base font-bold text-slate-800 break-keep leading-snug mt-1">${m.name}</div>
+              <div class="text-base font-extrabold text-amber-600 mt-0.5">${m.price.toLocaleString()}원</div>
+            </div>
+            <button onclick="addToCart('${m.name.replace(/'/g, "\\'")}', ${m.price})" 
+                    class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs shrink-0 shadow-sm transition">
+              <i class="fa-solid fa-plus mr-0.5"></i> 담기
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function getMyTotalAmount() {
+      if (!currentUserName) return 0;
+      return orders
+        .filter(o => o.userName === currentUserName)
+        .reduce((sum, item) => sum + (item.price * item.count), 0);
+    }
+
+    window.addToCart = async function(menuName, price) {
+      if (!currentUserName) {
+        showNotice("상단 학생 목록에서 본인 이름을 먼저 등록하고 선택해 주세요!", "주문자 미선택", "warning");
+        document.getElementById('newStudentInput').focus();
+        return;
+      }
+
+      const currentTotal = getMyTotalAmount();
+      if (currentTotal + price > BUDGET_LIMIT) {
+        showNotice(`1인당 예산 한도(${BUDGET_LIMIT.toLocaleString()}원)를 초과할 수 없습니다.\n현재 담은 금액: ${currentTotal.toLocaleString()}원\n추가 시 합계: ${(currentTotal + price).toLocaleString()}원`, "한도 초과 안내", "warning");
+        return;
+      }
+
+      const existing = orders.find(o => o.userName === currentUserName && o.menuName === menuName);
+
+      if (isConnected && db && authUser) {
+        try {
+          if (existing) {
+            const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', existing.id);
+            await updateDoc(orderRef, { count: existing.count + 1, updatedAt: Date.now() });
+          } else {
+            const ordersCol = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+            await addDoc(ordersCol, {
+              userName: currentUserName,
+              menuName: menuName,
+              price: price,
+              count: 1,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+          }
+        } catch (err) {
+          console.error("Add order error:", err);
+          showNotice("주문 추가 중 오류가 발생했습니다.", "오류", "error");
+        }
+      } else {
+        // Local mode fallback
+        if (existing) {
+          existing.count += 1;
+        } else {
+          orders.push({
+            id: 'local_' + Date.now() + Math.random(),
+            userName: currentUserName,
+            menuName: menuName,
+            price: price,
+            count: 1
+          });
+        }
+        saveLocalOrders(orders);
+        renderApp();
+      }
+    };
+
+    window.changeMyItemCount = async function(orderId, delta) {
+      const item = orders.find(o => o.id === orderId);
+      if (!item || item.userName !== currentUserName) return;
+
+      if (delta > 0) {
+        const currentTotal = getMyTotalAmount();
+        if (currentTotal + item.price > BUDGET_LIMIT) {
+          showNotice(`1인당 한도(${BUDGET_LIMIT.toLocaleString()}원)를 초과합니다!`, "한도 초과", "warning");
+          return;
+        }
+      }
+
+      if (isConnected && db && authUser) {
+        try {
+          const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', item.id);
+          if (item.count + delta <= 0) {
+            await deleteDoc(orderRef);
+          } else {
+            await updateDoc(orderRef, { count: item.count + delta, updatedAt: Date.now() });
+          }
+        } catch (err) {
+          console.error("Update count error:", err);
+        }
+      } else {
+        item.count += delta;
+        if (item.count <= 0) {
+          orders = orders.filter(o => o.id !== orderId);
+        }
+        saveLocalOrders(orders);
+        renderApp();
+      }
+    };
+
+    window.removeMyItem = async function(orderId) {
+      const item = orders.find(o => o.id === orderId);
+      if (!item || item.userName !== currentUserName) return;
+
+      if (isConnected && db && authUser) {
+        try {
+          const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', item.id);
+          await deleteDoc(orderRef);
+        } catch (err) {
+          console.error("Delete order error:", err);
+        }
+      } else {
+        orders = orders.filter(o => o.id !== orderId);
+        saveLocalOrders(orders);
+        renderApp();
+      }
+    };
+
+    function renderApp() {
+      // 1) 내 장바구니 리스트
+      const myOrderContainer = document.getElementById('myOrderList');
+      const myItems = orders.filter(o => o.userName === currentUserName);
+      const myTotal = getMyTotalAmount();
+      
+      document.getElementById('myTotalPrice').innerText = `${myTotal.toLocaleString()}원 / ${BUDGET_LIMIT.toLocaleString()}원`;
+
+      if (myItems.length === 0) {
+        myOrderContainer.innerHTML = `<div class="text-slate-400 py-4 text-center">선택된 메뉴가 없습니다.</div>`;
+      } else {
+        myOrderContainer.innerHTML = "";
+        myItems.forEach(item => {
+          const div = document.createElement('div');
+          div.className = "flex justify-between items-center p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-xs";
+          div.innerHTML = `
+            <div class="truncate mr-2">
+              <div class="font-bold text-slate-800 truncate">${item.menuName}</div>
+              <div class="text-slate-500 font-semibold">${(item.price * item.count).toLocaleString()}원 (${item.price.toLocaleString()}원)</div>
+            </div>
+            <div class="flex items-center space-x-1 shrink-0">
+              <button onclick="changeMyItemCount('${item.id}', -1)" class="w-6 h-6 bg-white border border-slate-300 rounded-lg font-bold hover:bg-slate-100 flex items-center justify-center text-slate-700 active:scale-95">-</button>
+              <span class="w-5 text-center font-bold text-sm">${item.count}</span>
+              <button onclick="changeMyItemCount('${item.id}', 1)" class="w-6 h-6 bg-white border border-slate-300 rounded-lg font-bold hover:bg-slate-100 flex items-center justify-center text-slate-700 active:scale-95">+</button>
+              <button onclick="removeMyItem('${item.id}')" class="ml-1 text-slate-400 hover:text-rose-500 p-1" title="삭제"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          `;
+          myOrderContainer.appendChild(div);
+        });
+      }
+
+      // 2) 취합 요약표 (메뉴명 내림차순 정렬)
+      const summaryMap = {};
+      let totalQty = 0;
+      let totalPrice = 0;
+
+      orders.forEach(o => {
+        if (!summaryMap[o.menuName]) {
+          summaryMap[o.menuName] = { count: 0, price: o.price };
+        }
+        summaryMap[o.menuName].count += o.count;
+        totalQty += o.count;
+        totalPrice += (o.price * o.count);
+      });
+
+      const sortedMenuNames = Object.keys(summaryMap).sort((a, b) => b.localeCompare(a));
+      const summaryTbody = document.getElementById('summaryTableBody');
+      summaryTbody.innerHTML = "";
+
+      if (sortedMenuNames.length === 0) {
+        summaryTbody.innerHTML = `<tr><td colspan="2" class="text-center py-6 text-slate-400">집계된 주문이 없습니다.</td></tr>`;
+      } else {
+        sortedMenuNames.forEach(name => {
+          const item = summaryMap[name];
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-amber-50/50 transition-colors";
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 font-bold text-slate-800">${name}</td>
+            <td class="py-2.5 px-3 text-center font-extrabold text-blue-600">${item.count}</td>
+          `;
+          summaryTbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('grandTotal').innerText = `${totalPrice.toLocaleString()}원 (${totalQty}개)`;
+
+      // 3) 학생별 현황
+      const userGroup = {};
+      orders.forEach(o => {
+        if (!userGroup[o.userName]) userGroup[o.userName] = [];
+        userGroup[o.userName].push(o);
+      });
+
+      const allStudentsList = document.getElementById('allStudentsList');
+      const studentNames = Object.keys(userGroup);
+      document.getElementById('activeStudentCount').innerText = `참여 ${studentNames.length}명`;
+      
+      if (studentNames.length === 0) {
+        allStudentsList.innerHTML = `<div class="text-slate-400 text-center py-4">주문한 학생이 없습니다.</div>`;
+      } else {
+        allStudentsList.innerHTML = "";
+        studentNames.forEach(name => {
+          const uItems = userGroup[name];
+          const uTotal = uItems.reduce((acc, cur) => acc + (cur.price * cur.count), 0);
+          const isMe = name === currentUserName;
+
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-xl border text-xs transition ${isMe ? 'bg-amber-50/90 border-amber-300 ring-1 ring-amber-300' : 'bg-slate-50 border-slate-200'}`;
+          
+          const itemListStr = uItems.map(i => `${i.menuName} x${i.count}`).join(', ');
+
+          card.innerHTML = `
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                ${name} ${isMe ? '<span class="text-[10px] bg-amber-400 text-slate-900 px-1.5 py-0.2 rounded-full font-extrabold">나</span>' : ''}
+              </span>
+              <span class="font-extrabold text-amber-700">${uTotal.toLocaleString()}원</span>
+            </div>
+            <div class="text-slate-600 truncate text-[11px]">${itemListStr}</div>
+          `;
+          allStudentsList.appendChild(card);
+        });
+      }
+    }
+
+    window.clearAllOrdersPrompt = function() {
+      showConfirm("모든 학생의 주문 취합 내역을 전부 초기화하시겠습니까?", async () => {
+        if (isConnected && db && authUser) {
+          try {
+            const deletePromises = orders.map(o => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', o.id)));
+            await Promise.all(deletePromises);
+          } catch (err) {
+            console.error("Clear orders error:", err);
+          }
+        }
+        orders = [];
+        saveLocalOrders(orders);
+        renderApp();
+        showNotice("모든 주문 내역이 초기화되었습니다.", "초기화 완료", "success");
+      });
+    };
+
+    window.copySummaryText = function() {
+      const summaryMap = {};
+      let totalQty = 0;
+      let totalPrice = 0;
+
+      orders.forEach(o => {
+        if (!summaryMap[o.menuName]) summaryMap[o.menuName] = { count: 0, price: o.price };
+        summaryMap[o.menuName].count += o.count;
+        totalQty += o.count;
+        totalPrice += (o.price * o.count);
+      });
+
+      const sortedNames = Object.keys(summaryMap).sort((a, b) => b.localeCompare(a));
+      if (sortedNames.length === 0) {
+        showNotice("복사할 주문 내역이 없습니다.", "알림", "warning");
+        return;
+      }
+
+      let copyText = `[한솥도시락 방과후 주문 내역서]\n`;
+      copyText += `====================================\n`;
+      sortedNames.forEach(name => {
+        const item = summaryMap[name];
+        copyText += `${name} : ${item.count}개 (${(item.price * item.count).toLocaleString()}원)\n`;
+      });
+      copyText += `====================================\n`;
+      copyText += `총 수량: ${totalQty}개 / 총 금액: ${totalPrice.toLocaleString()}원\n\n`;
+      copyText += `[학생별 주문 상세]\n`;
+      
+      const userGroup = {};
+      orders.forEach(o => {
+        if (!userGroup[o.userName]) userGroup[o.userName] = [];
+        userGroup[o.userName].push(o);
+      });
+      Object.keys(userGroup).forEach(u => {
+        const list = userGroup[u].map(i => `${i.menuName}(${i.count})`).join(', ');
+        copyText += `- ${u}: ${list}\n`;
+      });
+
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = copyText;
+      tempTextArea.style.position = "fixed";
+      tempTextArea.style.left = "-9999px";
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showNotice("주문 요약 내역이 클립보드에 복사되었습니다!\n(문자, 카카오톡, 메모장에 바로 붙여넣기 하실 수 있습니다)", "복사 완료", "success");
+      } catch (err) {
+        showNotice("클립보드 복사 중 오류가 발생했습니다.", "오류", "error");
+      } finally {
+        document.body.removeChild(tempTextArea);
+      }
+    };
+
+    window.openQRModal = function() {
+      document.getElementById('qrModal').classList.remove('hidden');
+      const container = document.getElementById('qrcode');
+      container.innerHTML = "";
+      new QRCode(container, {
+        text: window.location.href,
+        width: 180,
+        height: 180,
+        colorDark: "#1e293b",
+        colorLight: "#f8fafc"
+      });
+    };
+
+    window.closeQRModal = function() {
+      document.getElementById('qrModal').classList.add('hidden');
+    };
+
+    window.openAdminModal = function() {
+      document.getElementById('adminModal').classList.remove('hidden');
+      document.getElementById('adminAuthSection').classList.remove('hidden');
+      document.getElementById('adminEditSection').classList.add('hidden');
+      document.getElementById('adminPassword').value = "";
+    };
+
+    window.closeAdminModal = function() {
+      document.getElementById('adminModal').classList.add('hidden');
+    };
+
+    window.verifyAdminPassword = function() {
+      const pass = document.getElementById('adminPassword').value;
+      if (pass === ADMIN_PASS) {
+        document.getElementById('adminAuthSection').classList.add('hidden');
+        document.getElementById('adminEditSection').classList.remove('hidden');
+        renderAdminMenuList();
+      } else {
+        showNotice("비밀번호가 올바르지 않습니다.", "인증 실패", "error");
+      }
+    };
+
+    let draggedIndex = null;
+
+    function captureCurrentAdminInputData() {
+      const rows = document.querySelectorAll('.admin-menu-item');
+      if (rows.length === 0) return;
+      const updated = [];
+      rows.forEach((row, idx) => {
+        const catVal = row.querySelector('.admin-cat').value.trim() || '기타';
+        const nameVal = row.querySelector('.admin-name').value.trim();
+        const priceVal = parseInt(row.querySelector('.admin-price').value, 10) || 0;
+        const imgVal = row.querySelector('.admin-img').value.trim();
+        const idVal = menus[idx] ? menus[idx].id : (Date.now() + idx);
+        updated.push({ id: idVal, category: catVal, name: nameVal, price: priceVal, img: imgVal });
+      });
+      menus = updated;
+    }
+
+    function renderAdminMenuList() {
+      const container = document.getElementById('adminMenuList');
+      container.innerHTML = "";
+
+      menus.forEach((m, idx) => {
+        const row = document.createElement('div');
+        row.className = "admin-menu-item flex gap-2 items-center bg-white p-2.5 border border-slate-200 rounded-xl transition-all shadow-sm";
+        row.setAttribute('draggable', 'true');
+        row.dataset.index = idx;
+
+        row.innerHTML = `
+          <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-700 px-1">
+            <i class="fa-solid fa-grip-vertical"></i>
+          </div>
+          <span class="w-6 text-slate-400 font-bold text-center text-xs">${idx + 1}</span>
+          <input type="text" value="${m.category || '기타'}" placeholder="카테고리" class="admin-cat border border-slate-300 rounded-lg px-2 py-1 w-20 text-xs">
+          <input type="text" value="${m.name}" placeholder="메뉴명" class="admin-name border border-slate-300 rounded-lg px-2 py-1 flex-1 text-xs">
+          <input type="number" value="${m.price}" placeholder="가격" class="admin-price border border-slate-300 rounded-lg px-2 py-1 w-20 text-xs text-right">
+          <div class="flex flex-1 gap-1">
+            <input type="text" value="${m.img || ''}" placeholder="이미지 파일명/URL" class="admin-img border border-slate-300 rounded-lg px-2 py-1 w-full text-xs">
+            <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded-lg flex items-center justify-center shrink-0" title="사진 업로드 (자동 압축)">
+              <i class="fa-solid fa-camera text-slate-600"></i>
+              <input type="file" accept="image/*" class="hidden" onchange="handleAdminImageUpload(event, this)">
+            </label>
+          </div>
+          <button onclick="removeAdminMenuRow(${idx})" class="text-rose-500 hover:text-rose-700 px-1.5 font-bold" title="삭제">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+
+        row.addEventListener('dragstart', (e) => {
+          captureCurrentAdminInputData();
+          draggedIndex = idx;
+          row.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        row.addEventListener('dragend', () => {
+          row.classList.remove('dragging');
+          document.querySelectorAll('.admin-menu-item').forEach(r => r.classList.remove('drag-over'));
+        });
+
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          row.classList.add('drag-over');
+        });
+
+        row.addEventListener('dragleave', () => {
+          row.classList.remove('drag-over');
+        });
+
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          row.classList.remove('drag-over');
+          const targetIndex = idx;
+          if (draggedIndex !== null && draggedIndex !== targetIndex) {
+            const movedItem = menus.splice(draggedIndex, 1)[0];
+            menus.splice(targetIndex, 0, movedItem);
+            renderAdminMenuList();
+          }
+        });
+
+        container.appendChild(row);
+      });
+    }
+
+    window.addNewMenuRow = function() {
+      captureCurrentAdminInputData();
+      menus.unshift({ id: Date.now(), category: "도시락", name: "새 메뉴", price: 5000, img: "" });
+      renderAdminMenuList();
+    };
+
+    window.removeAdminMenuRow = function(index) {
+      captureCurrentAdminInputData();
+      menus.splice(index, 1);
+      renderAdminMenuList();
+    };
+
+    window.handleAdminImageUpload = function(event, el) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const imgInput = el.closest('.admin-menu-item').querySelector('.admin-img');
+          if (imgInput) {
+            const img = new Image();
+            img.onload = function() {
+              const canvas = document.createElement('canvas');
+              const MAX_SIZE = 120; // 10KB 내외로 가볍게 압축
+              let width = img.width;
+              let height = img.height;
+
+              if (width > height) {
+                if (width > MAX_SIZE) {
+                  height *= MAX_SIZE / width;
+                  width = MAX_SIZE;
+                }
+              } else {
+                if (height > MAX_SIZE) {
+                  width *= MAX_SIZE / height;
+                  height = MAX_SIZE;
+                }
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              imgInput.value = canvas.toDataURL('image/jpeg', 0.4); 
+            };
+            img.src = e.target.result;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    // ⭐️ 관리자 메뉴 수정사항을 localStorage 및 클라우드에 영구 저장하는 핵심 함수
+    window.saveAdminChanges = async function() {
+      const cats = document.querySelectorAll('.admin-cat');
+      const names = document.querySelectorAll('.admin-name');
+      const prices = document.querySelectorAll('.admin-price');
+      const imgs = document.querySelectorAll('.admin-img');
+
+      const updated = [];
+      for (let i = 0; i < names.length; i++) {
+        const catVal = cats[i].value.trim() || '기타';
+        const nameVal = names[i].value.trim();
+        const priceVal = parseInt(prices[i].value, 10) || 0;
+        const imgVal = imgs[i].value.trim();
+
+        if (nameVal) {
+          updated.push({
+            id: i + 1,
+            category: catVal,
+            name: nameVal,
+            price: priceVal,
+            img: imgVal
+          });
+        }
+      }
+
+      menus = updated;
+      // 1. 브라우저 localStorage에 영구 보존
+      saveLocalMenus(menus);
+
+      // 2. 클라우드 연결 상태인 경우 Firebase에도 백업 동기화
+      if (isConnected && db && authUser) {
+        try {
+          const menuDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menus');
+          await setDoc(menuDoc, { list: menus, updatedAt: Date.now() });
+        } catch (err) {
+          console.error("Save menus cloud error:", err);
+        }
+      }
+
+      renderMenus();
+      renderApp();
+      closeAdminModal();
+      showNotice("메뉴 수정사항이 성공적으로 저장되었습니다!\n이제 웹페이지를 새로고침(F5)해도 변경된 내용이 그대로 유지됩니다.", "저장 완료", "success");
+    };
+
+    window.resetToDefaultMenusPrompt = function() {
+      showConfirm("모든 메뉴를 최초의 기본 한솥 메뉴 목록으로 복원하시겠습니까?\n(직접 추가하거나 수정한 메뉴는 초기화됩니다)", async () => {
+        menus = [...defaultMenus];
+        saveLocalMenus(menus);
+
+        if (isConnected && db && authUser) {
+          try {
+            const menuDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menus');
+            await setDoc(menuDoc, { list: defaultMenus, updatedAt: Date.now() });
+          } catch (err) {
+            console.error("Reset error:", err);
+          }
+        }
+        renderAdminMenuList();
+        renderMenus();
+        renderApp();
+        showNotice("기본 한솥 메뉴 목록으로 복원되었습니다.", "복원 완료", "success");
+      });
+    };
+
+    window.onload = function() {
+      if (currentUserName) {
+        updateUserStatus();
+      }
+      initCloudSync();
+    };
+  </script>
+</body>
+</html>
