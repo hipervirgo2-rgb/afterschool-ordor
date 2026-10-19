@@ -49,22 +49,21 @@
       </div>
     </div>
 
-    <!-- ⭐️ [반/그룹 선택 바] ⭐️ -->
+    <!-- ⭐️ [학년 선택 바: 3학년 / 2학년] ⭐️ -->
     <div class="bg-amber-500/90 border-t border-amber-500 px-4 py-2 text-slate-900 shadow-inner">
       <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2">
           <span class="text-xs font-black text-amber-950 flex items-center gap-1">
-            <i class="fa-solid fa-users-rectangle"></i> 반/그룹 선택:
+            <i class="fa-solid fa-graduation-cap"></i> 학년 선택:
           </span>
           <div class="inline-flex rounded-xl bg-amber-600/50 p-1 shadow-sm gap-1" id="classTabs">
-            <button onclick="switchClass('1반')" id="tab-1반" class="px-3.5 py-1 rounded-lg text-xs font-extrabold transition">1반</button>
-            <button onclick="switchClass('2반')" id="tab-2반" class="px-3.5 py-1 rounded-lg text-xs font-extrabold transition">2반</button>
-            <button onclick="switchClass('3반')" id="tab-3반" class="px-3.5 py-1 rounded-lg text-xs font-extrabold transition">3반</button>
+            <button onclick="switchClass('3학년')" id="tab-3학년" class="px-4 py-1.5 rounded-lg text-xs font-extrabold transition">3학년</button>
+            <button onclick="switchClass('2학년')" id="tab-2학년" class="px-4 py-1.5 rounded-lg text-xs font-extrabold transition">2학년</button>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <span id="currentClassBadge" class="text-xs bg-white text-amber-900 font-black px-3 py-1 rounded-full shadow-sm border border-amber-300">
-            현재 [1반] 주문 화면
+            현재 [3학년] 주문 화면
           </span>
         </div>
       </div>
@@ -91,9 +90,9 @@
       <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex justify-between items-center mb-2">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-            <i class="fa-solid fa-id-card text-amber-500 mr-1"></i> <span id="studentSectionClassTitle">1반</span> 주문자 학생 선택 (본인 이름 클릭)
+            <i class="fa-solid fa-id-card text-amber-500 mr-1"></i> <span id="studentSectionClassTitle">3학년</span> 주문자 학생 선택 (본인 이름 클릭)
           </label>
-          <span class="text-[11px] text-slate-400">선택된 반 안에서 명단이 공유됩니다</span>
+          <span class="text-[11px] text-slate-400">선택된 학년 안에서 명단이 공유됩니다</span>
         </div>
         
         <div class="flex gap-2 mb-3">
@@ -170,9 +169,9 @@
         <div class="flex justify-between items-center mb-3">
           <div>
             <h2 class="text-sm font-bold flex items-center gap-1.5 text-slate-800">
-              <i class="fa-solid fa-clipboard-list text-amber-500"></i> <span id="summaryClassTitle">1반</span> 실시간 집계
+              <i class="fa-solid fa-clipboard-list text-amber-500"></i> <span id="summaryClassTitle">3학년</span> 실시간 집계
             </h2>
-            <p class="text-[11px] text-slate-400 mt-0.5">해당 반 학생들의 주문만 실시간 합산됩니다</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">해당 학년 학생들의 주문만 실시간 합산됩니다</p>
           </div>
           <div class="flex items-center gap-1.5">
             <button onclick="clearCurrentClassOrdersPrompt()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1 font-semibold transition">
@@ -208,7 +207,7 @@
       <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
         <h2 class="text-sm font-bold mb-3 flex items-center justify-between text-slate-800">
           <span class="flex items-center gap-1.5">
-            <i class="fa-solid fa-users text-amber-500"></i> <span id="studentDetailClassTitle">1반</span> 학생별 현황
+            <i class="fa-solid fa-users text-amber-500"></i> <span id="studentDetailClassTitle">3학년</span> 학생별 현황
           </span>
           <span id="activeStudentCount" class="text-xs text-slate-400">참여 0명</span>
         </h2>
@@ -226,8 +225,8 @@
       <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
         <i class="fa-solid fa-qrcode"></i>
       </div>
-      <h3 class="text-lg font-bold text-slate-800"><span id="qrModalClassTitle">1반</span> 모바일 참여 QR</h3>
-      <p class="text-xs text-slate-500">휴대폰 카메라로 스캔하면 <b>선택된 반</b>으로 자동 접속되어 주문할 수 있습니다.</p>
+      <h3 class="text-lg font-bold text-slate-800"><span id="qrModalClassTitle">3학년</span> 모바일 참여 QR</h3>
+      <p class="text-xs text-slate-500">휴대폰 카메라로 스캔하면 <b>선택된 학년</b>으로 자동 접속되어 주문할 수 있습니다.</p>
       <div id="qrcode" class="flex justify-center my-4 p-3 bg-slate-50 rounded-2xl border border-slate-200"></div>
       <button onclick="closeQRModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 rounded-xl text-sm transition">닫기</button>
     </div>
@@ -259,7 +258,7 @@
 
       <div id="adminEditSection" class="hidden flex-1 overflow-hidden flex flex-col">
         <div class="flex justify-between items-center mb-2.5">
-          <span class="text-xs text-slate-500">메뉴 변경 시 모든 반(1반, 2반, 3반)에 공통 반영됩니다.</span>
+          <span class="text-xs text-slate-500">메뉴 변경 시 모든 학년(3학년, 2학년)에 공통 반영됩니다.</span>
           <button onclick="addNewMenuRow()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition">
             + 새 메뉴 추가
           </button>
@@ -346,15 +345,15 @@
 
     // =========================================================================
     // ⭐️ [필수] 스마트폰-PC 실시간 연동을 위한 Firebase 설정 키 ⭐️
-    // 기존에 발급받으신 키를 아래 따옴표 안에 그대로 입력해 주세요.
+    // 기존에 발급받아 쓰시던 키를 아래 따옴표 안에 그대로 입력해 주세요.
     // =========================================================================
     const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyA_Ohju_rI9VHmY8JLNGN2ENyv38WLdnKc",
-      authDomain: "afterschool-order.firebaseapp.com",
-      projectId: "afterschool-order",
-      storageBucket: "afterschool-order.firebasestorage.app",
-      messagingSenderId: "230836149524",
-      appId: "1:230836149524:web:ab2e74697f31dfa7c67601"
+  apiKey: "AIzaSyA_Ohju_rI9VHmY8JLNGN2ENyv38WLdnKc",
+  authDomain: "afterschool-order.firebaseapp.com",
+  projectId: "afterschool-order",
+  storageBucket: "afterschool-order.firebasestorage.app",
+  messagingSenderId: "230836149524",
+  appId: "1:230836149524:web:ab2e74697f31dfa7c67601"
     };
     // =========================================================================
 
@@ -487,17 +486,18 @@
     ];
 
     // =========================================================================
-    // 반(그룹) 관리 로직
+    // ⭐️ [학년 관리 로직: 3학년 / 2학년] ⭐️
     // =========================================================================
     const urlParams = new URLSearchParams(window.location.search);
     const initialClassFromUrl = urlParams.get('class');
-    const validClasses = ['1반', '2반', '3반'];
+    const validClasses = ['3학년', '2학년'];
 
+    const storedClass = localStorage.getItem('hansot_current_class');
     let currentClass = (initialClassFromUrl && validClasses.includes(initialClassFromUrl))
       ? initialClassFromUrl
-      : (localStorage.getItem('hansot_current_class') || '1반');
+      : (validClasses.includes(storedClass) ? storedClass : '3학년');
 
-    // 반별 LocalStorage 키 헬퍼
+    // 학년별 LocalStorage 키 헬퍼
     function getStoredMenus() {
       try {
         const saved = localStorage.getItem('hansot_menus_v3');
@@ -586,12 +586,12 @@
       confirmCallback = null;
     };
 
-    // ⭐️ [반 전환 함수] ⭐️
+    // ⭐️ [학년 전환 함수] ⭐️
     window.switchClass = function(newClass) {
       currentClass = newClass;
       localStorage.setItem('hansot_current_class', currentClass);
 
-      // 해당 반의 사용자/데이터로 전환
+      // 해당 학년의 사용자/데이터로 전환
       currentUserName = localStorage.getItem(`hansot_user_${currentClass}`) || "";
       orders = getStoredOrders(currentClass);
       savedStudents = getStoredStudents(currentClass);
@@ -607,14 +607,14 @@
     };
 
     function updateClassUI() {
-      // 탭 스타일 갱신
+      // 탭 버튼 스타일 갱신 (3학년 / 2학년)
       validClasses.forEach(cls => {
         const btn = document.getElementById(`tab-${cls}`);
         if (!btn) return;
         if (cls === currentClass) {
-          btn.className = "px-3.5 py-1 rounded-lg text-xs font-black bg-white text-slate-900 shadow transition scale-105";
+          btn.className = "px-4 py-1.5 rounded-lg text-xs font-black bg-white text-slate-900 shadow transition scale-105";
         } else {
-          btn.className = "px-3.5 py-1 rounded-lg text-xs font-bold text-amber-950/80 hover:bg-amber-500/50 hover:text-white transition";
+          btn.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-amber-950/80 hover:bg-amber-500/50 hover:text-white transition";
         }
       });
 
@@ -625,7 +625,7 @@
       document.getElementById('qrModalClassTitle').innerText = currentClass;
     }
 
-    // Firestore 실시간 리스너 구독 (반별 분리)
+    // Firestore 실시간 리스너 구독 (학년별 분리)
     function listenToClassData() {
       if (unsubscribeOrders) unsubscribeOrders();
       if (unsubscribeStudents) unsubscribeStudents();
@@ -633,7 +633,7 @@
       const syncLabel = document.getElementById('syncStatusLabel');
       const syncDot = document.getElementById('syncDot');
 
-      // 반별 독립 컬렉션 (orders_1반, orders_2반 ...)
+      // 학년별 독립 컬렉션 (orders_3학년, orders_2학년)
       const ordersCol = collection(db, `orders_${currentClass}`);
       unsubscribeOrders = onSnapshot(ordersCol, (snapshot) => {
         orders = snapshot.docs.map(docSnap => ({
@@ -648,7 +648,7 @@
         syncDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
       });
 
-      // 반별 독립 학생 컬렉션 (students_1반, students_2반 ...)
+      // 학년별 독립 학생 컬렉션 (students_3학년, students_2학년)
       const studentsCol = collection(db, `students_${currentClass}`);
       unsubscribeStudents = onSnapshot(studentsCol, (snapshot) => {
         const list = snapshot.docs.map(docSnap => docSnap.data().name).filter(Boolean);
@@ -689,10 +689,10 @@
         syncDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot";
         warningBanner.classList.add('hidden');
 
-        // 현재 반 데이터 구독 시작
+        // 현재 학년 데이터 구독 시작
         listenToClassData();
 
-        // 관리자 메뉴는 전 반 공통 공유
+        // 관리자 메뉴는 전 학년 공통 공유
         const menuConfigDoc = doc(db, 'settings', 'menus');
         unsubscribeMenus = onSnapshot(menuConfigDoc, (docSnap) => {
           if (docSnap.exists() && Array.isArray(docSnap.data().list) && docSnap.data().list.length > 0) {
@@ -1006,7 +1006,7 @@
         });
       }
 
-      // 2) 취합 요약표 (현재 반 기준)
+      // 2) 취합 요약표 (현재 선택 학년 기준)
       const summaryMap = {};
       let totalQty = 0;
       let totalPrice = 0;
@@ -1080,9 +1080,9 @@
       }
     }
 
-    // ⭐️ [현재 반 주문만 비우기] ⭐️
+    // ⭐️ [현재 학년 주문만 비우기] ⭐️
     window.clearCurrentClassOrdersPrompt = function() {
-      showConfirm(`현재 [${currentClass}]의 주문 취합 내역을 전부 초기화하시겠습니까?\n(다른 반의 주문 데이터는 안전하게 유지됩니다)`, async () => {
+      showConfirm(`현재 [${currentClass}]의 주문 취합 내역을 전부 초기화하시겠습니까?\n(다른 학년의 주문 데이터는 안전하게 유지됩니다)`, async () => {
         if (isConnected && db) {
           try {
             const deletePromises = orders.map(o => deleteDoc(doc(db, `orders_${currentClass}`, o.id)));
@@ -1096,7 +1096,7 @@
       });
     };
 
-    // ⭐️ [현재 반 주문 내역서 복사] ⭐️
+    // ⭐️ [현재 학년 주문 내역서 복사] ⭐️
     window.copySummaryText = function() {
       const summaryMap = {};
       let totalQty = 0;
@@ -1151,13 +1151,13 @@
       }
     };
 
-    // ⭐️ [현재 선택된 반으로 자동 접속되는 QR 코드 생성] ⭐️
+    // ⭐️ [현재 선택된 학년으로 자동 접속되는 QR 코드 생성] ⭐️
     window.openQRModal = function() {
       document.getElementById('qrModal').classList.remove('hidden');
       const container = document.getElementById('qrcode');
       container.innerHTML = "";
 
-      // QR 접속 시 현재 반 파라미터(?class=1반)를 붙여 자동 진입되도록 처리
+      // QR 접속 시 현재 학년 파라미터(?class=3학년 등)를 붙여 자동 진입되도록 처리
       const targetUrl = `${window.location.origin}${window.location.pathname}?class=${encodeURIComponent(currentClass)}`;
       
       new QRCode(container, {
@@ -1364,7 +1364,7 @@
       renderMenus();
       renderApp();
       closeAdminModal();
-      showNotice("메뉴 수정사항이 저장되었습니다!\n모든 반의 화면에 공통 적용됩니다.", "저장 완료", "success");
+      showNotice("메뉴 수정사항이 저장되었습니다!\n모든 학년(3학년, 2학년)의 화면에 공통 적용됩니다.", "저장 완료", "success");
     };
 
     window.resetToDefaultMenusPrompt = function() {
