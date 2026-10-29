@@ -143,9 +143,15 @@
       <!-- 메뉴 카탈로그 섹션 -->
       <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-          <h2 class="text-base md:text-lg font-bold flex items-center gap-2">
-            <i class="fa-solid fa-utensils text-amber-500"></i> 메뉴 선택
-          </h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-base md:text-lg font-bold flex items-center gap-2">
+              <i class="fa-solid fa-utensils text-amber-500"></i> 메뉴 선택
+            </h2>
+            <!-- ⭐️ [결정장애 탈출 추천 버튼] ⭐️ -->
+            <button onclick="openRouletteModal()" class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition active:scale-95 animate-pulse hover:animate-none">
+              <i class="fa-solid fa-dice text-amber-200"></i> 🎰 결정장애 탈출
+            </button>
+          </div>
           <div class="relative w-full sm:w-48">
             <input type="text" id="menuSearch" oninput="renderMenus()" placeholder="메뉴 검색..." 
                    class="text-xs border border-slate-300 rounded-xl pl-8 pr-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-amber-400">
@@ -293,6 +299,43 @@
     </div>
   </div>
 
+  <!-- ⭐️ [8,000원 황금 룰렛 모달: 결정장애 탈출 꿀조합 생성기] ⭐️ -->
+  <div id="rouletteModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-4 shadow-2xl relative overflow-hidden border-2 border-amber-400">
+      <div class="flex justify-between items-center pb-2 border-b">
+        <div class="flex items-center gap-2 text-slate-800 font-extrabold text-base sm:text-lg">
+          <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-base">🎰</span>
+          <span>8,000원 황금 룰렛</span>
+        </div>
+        <button onclick="closeRouletteModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">결정장애 탈출! 메인 메뉴와 사이드/토핑을 조합해 8,000원 예산을 알차게 채워드립니다.</p>
+
+      <!-- 룰렛 결과 표시 슬롯 영역 -->
+      <div id="rouletteSlotDisplay" class="bg-gradient-to-b from-amber-50 to-orange-50/40 border border-amber-200 rounded-2xl p-3.5 space-y-2 shadow-inner min-h-[160px] flex flex-col justify-center">
+      </div>
+
+      <!-- 총 금액 및 잔액 배지 -->
+      <div class="flex justify-between items-center px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm">
+        <span>조합 합계 금액</span>
+        <span id="roulettePriceSummary" class="text-amber-400 font-black text-sm">0원 / 8,000원</span>
+      </div>
+
+      <!-- 액션 버튼 바 -->
+      <div class="flex gap-2 pt-1">
+        <button id="rouletteSpinBtn" onclick="spinRoulette()" class="flex-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-sm">
+          <i class="fa-solid fa-rotate text-amber-200"></i> 다시 돌리기
+        </button>
+        <button id="rouletteApplyBtn" onclick="applyRouletteComboToCart()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-sm">
+          <i class="fa-solid fa-basket-shopping text-emerald-200"></i> 이 조합으로 담기
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ⭐️ [관리자 모달: 원격 락킹 해제, 내역서 복사, 비우기, 메뉴 카탈로그 총괄] ⭐️ -->
   <div id="adminModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl">
@@ -319,7 +362,7 @@
       </div>
 
       <!-- 관리자 본체 화면 -->
-      <div id="adminEditSection" class="hidden flex-1 overflow-hidden flex flex-col space-y-3">
+      <div id="adminEditSection" class="hidden flex-1 overflow-y-auto pr-1 flex flex-col space-y-3 max-h-[75vh]">
         
         <!-- 기기 권한 안내 및 해제 -->
         <div class="bg-amber-50 p-2.5 rounded-2xl border border-amber-200 flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -335,40 +378,45 @@
           </button>
         </div>
 
-        <!-- ⭐️ [신규 1: 관리자 전용 주문 복사 & 초기화 도구 바] ⭐️ -->
-        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-          <div class="text-xs font-bold text-slate-700 flex items-center justify-between">
-            <span class="flex items-center gap-1.5">
-              <i class="fa-solid fa-file-invoice text-amber-600"></i> <b id="adminCopyClassLabel">3학년</b> 주문서 복사 & 비우기 도구
-            </span>
+        <!-- ⭐️ [관리자 전용 주문 도구 및 학생 락킹 관리 구역 (마우스 휠 스크롤 적용)] ⭐️ -->
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-3 max-h-56 sm:max-h-64 overflow-y-auto pr-1 shadow-inner">
+          
+          <!-- 주문서 복사 & 비우기 도구 바 -->
+          <div>
+            <div class="text-xs font-bold text-slate-700 flex items-center justify-between mb-2">
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-file-invoice text-amber-600"></i> <b id="adminCopyClassLabel">3학년</b> 주문서 복사 & 비우기 도구
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="copySummaryText()" class="flex-1 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
+                <i class="fa-solid fa-copy text-amber-600"></i> 전체 주문 내역서 복사
+              </button>
+              <button onclick="copyUnorderedStudents()" class="flex-1 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
+                <i class="fa-solid fa-user-clock text-amber-600"></i> 미주문자 명단 복사
+              </button>
+              <button onclick="clearCurrentClassOrdersPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
+                <i class="fa-solid fa-trash-can"></i> 주문 비우기
+              </button>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="copySummaryText()" class="flex-1 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
-              <i class="fa-solid fa-copy text-amber-600"></i> 전체 주문 내역서 복사
-            </button>
-            <button onclick="copyUnorderedStudents()" class="flex-1 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
-              <i class="fa-solid fa-user-clock text-amber-600"></i> 미주문자 명단 복사
-            </button>
-            <button onclick="clearCurrentClassOrdersPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
-              <i class="fa-solid fa-trash-can"></i> 주문 비우기
-            </button>
-          </div>
-        </div>
 
-        <!-- ⭐️ [신규 2: 학생 기기 원격 락킹 해제 관리 센터] ⭐️ -->
-        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col max-h-40 overflow-hidden">
-          <div class="flex justify-between items-center mb-1.5 shrink-0">
-            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <i class="fa-solid fa-mobile-screen-button text-emerald-600"></i> 
-              <b id="adminLockManageClassTitle">3학년</b> 학생 스마트폰 기기 락킹 관리
-            </span>
-            <button onclick="adminRemoteUnlockAllPrompt()" class="text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-lg font-bold transition">
-              <i class="fa-solid fa-rotate-left mr-0.5"></i> 전체 락 일괄 초기화
-            </button>
+          <!-- 학생 기기 원격 락킹 해제 관리 센터 -->
+          <div class="border-t border-slate-200 pt-2.5">
+            <div class="flex justify-between items-center mb-2 shrink-0">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-mobile-screen-button text-emerald-600"></i> 
+                <b id="adminLockManageClassTitle">3학년</b> 학생 스마트폰 기기 락킹 관리
+              </span>
+              <button onclick="adminRemoteUnlockAllPrompt()" class="text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-lg font-bold transition">
+                <i class="fa-solid fa-rotate-left mr-0.5"></i> 전체 락 일괄 초기화
+              </button>
+            </div>
+            <div id="adminLockedStudentsList" class="space-y-1.5 pr-1 text-xs">
+              <!-- 자바스크립트가 등록된 학생 기기 목록을 실시간 렌더링 -->
+            </div>
           </div>
-          <div id="adminLockedStudentsList" class="flex-1 overflow-y-auto space-y-1 pr-1 text-xs">
-            <!-- 자바스크립트가 등록된 학생 기기 목록을 실시간 렌더링 -->
-          </div>
+
         </div>
 
         <!-- 메뉴 카탈로그 순서 및 편집 구역 -->
@@ -1975,6 +2023,225 @@
     window.closeQRModal = function() { document.getElementById('qrModal').classList.add('hidden'); };
     window.openFirebaseGuideModal = function() { document.getElementById('firebaseGuideModal').classList.remove('hidden'); };
     window.closeFirebaseGuideModal = function() { document.getElementById('firebaseGuideModal').classList.add('hidden'); };
+
+    // =========================================================================
+    // ⭐️ [8,000원 황금 룰렛 시스템 (결정장애 탈출 & 예산 알뜰 조합 추천)] ⭐️
+    // =========================================================================
+    let currentRouletteCombo = [];
+    let isRouletteSpinning = false;
+    let rouletteSpinTimer = null;
+
+    function generateBestRouletteCombo() {
+      const mains = menus.filter(m => ["도시락", "보울", "덮밥", "비빔밥"].includes(m.category) && m.price <= BUDGET_LIMIT);
+      const sides = menus.filter(m => ["사이드", "반찬"].includes(m.category) && m.price < BUDGET_LIMIT);
+      const addons = menus.filter(m => ["토핑", "소스/시즈닝", "밥"].includes(m.category) && m.price < BUDGET_LIMIT);
+
+      if (mains.length === 0) return [];
+
+      let bestCombo = [];
+      let bestPrice = 0;
+
+      // 40회 무작위 시뮬레이션으로 8,000원에 가장 근접한(7,500원~8,000원) 꿀조합 탐색
+      for (let i = 0; i < 40; i++) {
+        const combo = [];
+        const main = mains[Math.floor(Math.random() * mains.length)];
+        combo.push(main);
+        let currentSum = main.price;
+
+        // 사이드 추가 여부 (남은 예산 1,500원 이상일 때)
+        if (sides.length > 0 && BUDGET_LIMIT - currentSum >= 1500 && Math.random() > 0.2) {
+          const validSides = sides.filter(s => currentSum + s.price <= BUDGET_LIMIT);
+          if (validSides.length > 0) {
+            const side = validSides[Math.floor(Math.random() * validSides.length)];
+            combo.push(side);
+            currentSum += side.price;
+          }
+        }
+
+        // 토핑/소스/밥 추가 여부 (남은 예산 100원 이상일 때)
+        if (addons.length > 0 && BUDGET_LIMIT - currentSum >= 100) {
+          const validAddons = addons.filter(a => currentSum + a.price <= BUDGET_LIMIT);
+          if (validAddons.length > 0) {
+            const addon = validAddons[Math.floor(Math.random() * validAddons.length)];
+            combo.push(addon);
+            currentSum += addon.price;
+          }
+        }
+
+        if (currentSum > bestPrice && currentSum <= BUDGET_LIMIT) {
+          bestPrice = currentSum;
+          bestCombo = combo;
+          if (bestPrice === BUDGET_LIMIT) break; // 딱코 8,000원 완성 시 즉시 확정
+        }
+      }
+
+      return bestCombo.length > 0 ? bestCombo : [mains[0]];
+    }
+
+    window.openRouletteModal = function() {
+      document.getElementById('rouletteModal').classList.remove('hidden');
+      spinRoulette();
+    };
+
+    window.closeRouletteModal = function() {
+      if (rouletteSpinTimer) clearInterval(rouletteSpinTimer);
+      isRouletteSpinning = false;
+      document.getElementById('rouletteModal').classList.add('hidden');
+    };
+
+    window.spinRoulette = function() {
+      if (isRouletteSpinning) return;
+      isRouletteSpinning = true;
+
+      const display = document.getElementById('rouletteSlotDisplay');
+      const priceSummary = document.getElementById('roulettePriceSummary');
+      const spinBtn = document.getElementById('rouletteSpinBtn');
+      const applyBtn = document.getElementById('rouletteApplyBtn');
+
+      spinBtn.disabled = true;
+      applyBtn.disabled = true;
+      spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      applyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      let ticks = 0;
+      if (rouletteSpinTimer) clearInterval(rouletteSpinTimer);
+
+      rouletteSpinTimer = setInterval(() => {
+        ticks++;
+        const tempMain = menus[Math.floor(Math.random() * menus.length)];
+        const tempSub = menus[Math.floor(Math.random() * menus.length)];
+
+        display.innerHTML = `
+          <div class="space-y-2 py-2 animate-pulse">
+            <div class="p-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 shadow-sm flex items-center justify-between">
+              <span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-extrabold">🎲 추첨 중</span>
+              <span class="truncate mx-2">${tempMain.name}</span>
+              <span class="text-amber-600 font-extrabold">${tempMain.price.toLocaleString()}원</span>
+            </div>
+            <div class="p-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 shadow-sm flex items-center justify-between">
+              <span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-extrabold">🎲 추첨 중</span>
+              <span class="truncate mx-2">${tempSub.name}</span>
+              <span class="text-amber-600 font-extrabold">${tempSub.price.toLocaleString()}원</span>
+            </div>
+          </div>
+        `;
+        priceSummary.innerText = "황금 꿀조합 계산 중...";
+
+        if (ticks >= 16) {
+          clearInterval(rouletteSpinTimer);
+          isRouletteSpinning = false;
+          spinBtn.disabled = false;
+          applyBtn.disabled = false;
+          spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          applyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+          currentRouletteCombo = generateBestRouletteCombo();
+          renderRouletteComboResult();
+        }
+      }, 65);
+    };
+
+    function renderRouletteComboResult() {
+      const display = document.getElementById('rouletteSlotDisplay');
+      const priceSummary = document.getElementById('roulettePriceSummary');
+
+      const total = currentRouletteCombo.reduce((acc, cur) => acc + cur.price, 0);
+
+      display.innerHTML = `
+        <div class="space-y-2">
+          ${currentRouletteCombo.map(item => `
+            <div class="flex items-center justify-between p-2.5 bg-white border border-amber-200 rounded-xl text-xs shadow-xs hover:border-amber-400 transition">
+              <div class="flex items-center gap-2 truncate">
+                <span class="text-[10px] bg-amber-100 text-amber-800 font-black px-1.5 py-0.5 rounded-md shrink-0">${item.category}</span>
+                <span class="font-bold text-slate-800 truncate">${item.name}</span>
+              </div>
+              <span class="font-black text-amber-700 shrink-0 ml-2">${item.price.toLocaleString()}원</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      if (total === BUDGET_LIMIT) {
+        priceSummary.innerHTML = `<span class="text-emerald-400 font-black"><i class="fa-solid fa-bullseye mr-1"></i>딱코 8,000원 달성! (잔액 0원)</span>`;
+      } else {
+        const diff = BUDGET_LIMIT - total;
+        priceSummary.innerHTML = `<span>${total.toLocaleString()}원 <span class="text-amber-300 text-[11px] font-semibold">(남은 잔액: ${diff.toLocaleString()}원)</span></span>`;
+      }
+    }
+
+    // ⭐️ [황금 룰렛 조합을 내 장바구니에 원클릭 적용] ⭐️
+    window.applyRouletteComboToCart = async function() {
+      if (isRouletteSpinning || !currentRouletteCombo.length) return;
+
+      const lockedName = getLockedStudentName(currentClass);
+      if (!isAdminDevice && !lockedName) {
+        showNotice(`상단 [${currentClass}] 학생 목록에서 본인 이름을 먼저 터치해 기기에 등록해 주세요!`, "주문자 등록 필요", "warning");
+        closeRouletteModal();
+        return;
+      }
+      if (!isAdminDevice && currentUserName !== lockedName) {
+        showNotice(`본인 기기(${lockedName})의 메뉴만 담을 수 있습니다.`, "권한 안내", "warning");
+        return;
+      }
+      if (!currentUserName) {
+        showNotice("주문자 이름을 먼저 선택해주세요.", "선택 필요", "warning");
+        return;
+      }
+
+      const myExistingItems = orders.filter(o => o.userName === currentUserName);
+
+      const doApply = async () => {
+        // 1) 기존 내 장바구니 메뉴 비우기 및 랭킹 차감
+        if (myExistingItems.length > 0) {
+          for (const item of myExistingItems) {
+            updateRankingStats(item.menuName, -item.count);
+            if (isConnected && db) {
+              try {
+                await deleteDoc(doc(db, `orders_${currentClass}`, item.id));
+              } catch (e) { console.error(e); }
+            }
+          }
+          orders = orders.filter(o => o.userName !== currentUserName);
+        }
+
+        // 2) 룰렛 추천 조합을 장바구니에 담기 및 랭킹 통계 반영
+        for (const item of currentRouletteCombo) {
+          updateRankingStats(item.name, 1);
+          if (isConnected && db) {
+            try {
+              const ordersCol = collection(db, `orders_${currentClass}`);
+              await addDoc(ordersCol, {
+                userName: currentUserName,
+                menuName: item.name,
+                price: item.price,
+                count: 1,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              });
+            } catch (e) { console.error(e); }
+          } else {
+            orders.push({
+              id: 'local_' + Date.now() + Math.random(),
+              userName: currentUserName,
+              menuName: item.name,
+              price: item.price,
+              count: 1
+            });
+          }
+        }
+
+        saveLocalOrders(orders, currentClass);
+        renderApp();
+        closeRouletteModal();
+        showNotice(`[${currentUserName}] 학생의 장바구니에 8,000원 황금 룰렛 조합이 성공적으로 담겼습니다! 🎉`, "주문 완료", "success");
+      };
+
+      if (myExistingItems.length > 0) {
+        showConfirm(`기존에 담은 메뉴(${myExistingItems.length}개)를 비우고 이 황금 룰렛 조합으로 교체하시겠습니까?`, doApply, "장바구니 교체 확인");
+      } else {
+        await doApply();
+      }
+    };
 
     // ⭐️ [관리자 모달 및 관리자 기기 락킹 인증] ⭐️
     window.openAdminModal = function() {
