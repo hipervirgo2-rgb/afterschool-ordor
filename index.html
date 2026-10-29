@@ -24,58 +24,72 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-16 antialiased">
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-20 antialiased selection:bg-amber-200">
 
-  <!-- 메인 헤더 -->
+  <!-- 메인 상단 헤더 -->
   <header class="bg-amber-400 text-slate-900 shadow-md sticky top-0 z-30">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
-      <div class="flex items-center space-x-2.5">
-        <i class="fa-solid fa-bowl-rice text-2xl text-amber-800"></i>
+    <div class="max-w-6xl mx-auto px-4 py-2.5 flex justify-between items-center gap-2">
+      
+      <!-- 헤더 로고 (선생님 기기 인증 트리거 포함) -->
+      <div class="flex items-center space-x-2.5 cursor-pointer select-none" onclick="triggerAdminAuthFromLogo()" title="선생님 PC 등록 (클릭)">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/40 flex items-center justify-center text-amber-900 text-2xl hover:bg-amber-500/70 transition shadow-inner">
+          <i class="fa-solid fa-bowl-rice"></i>
+        </div>
         <div>
-          <h1 class="text-lg md:text-xl font-extrabold tracking-tight">방과후 한솥 실시간 주문기</h1>
-          <div class="flex items-center gap-1.5 text-[11px] text-amber-900 font-medium">
-            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-base md:text-lg font-black tracking-tight">방과후 한솥 실시간 주문기</h1>
+            <!-- 관리자 기기 배지 (선생님 기기일 때만 노출) -->
+            <span id="headerAdminBadge" class="hidden text-[10px] bg-slate-900 text-amber-300 font-extrabold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+              <i class="fa-solid fa-crown text-amber-400"></i> 관리자 PC
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 text-[11px] text-amber-950 font-medium">
+            <span id="syncDot" class="w-2 h-2 rounded-full bg-amber-700"></span>
             <span id="syncStatusLabel">연결 상태 확인 중...</span>
           </div>
         </div>
       </div>
+
+      <!-- 상단 액션 버튼 영역 -->
       <div class="flex items-center space-x-2">
-        <button onclick="openQRModal()" class="px-3 py-1.5 bg-white text-xs font-bold rounded-lg shadow-sm hover:bg-amber-50 flex items-center gap-1.5 border border-amber-500 transition active:scale-95">
+        <button onclick="openQRModal()" class="px-3 py-1.5 bg-white text-xs font-bold rounded-xl shadow-sm hover:bg-amber-50 flex items-center gap-1.5 border border-amber-500 text-slate-800 transition active:scale-95">
           <i class="fa-solid fa-qrcode text-amber-600"></i> <span class="hidden sm:inline">모바일</span> QR코드
         </button>
-        <button onclick="openAdminModal()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-slate-700 flex items-center gap-1.5 transition active:scale-95">
+        
+        <!-- ⭐️ [관리자 모달 버튼: 선생님 관리자 기기로 락킹된 기기에서만 노출됨] ⭐️ -->
+        <button id="adminHeaderBtn" onclick="openAdminModal()" class="hidden px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 transition active:scale-95 border border-slate-700">
           <i class="fa-solid fa-gear"></i> 관리자
         </button>
       </div>
     </div>
 
-    <!-- ⭐️ [학년 선택 바: 3학년 / 2학년] ⭐️ -->
-    <div class="bg-amber-500/90 border-t border-amber-500 px-4 py-2 text-slate-900 shadow-inner">
+    <!-- 학년 선택 바 (3학년 / 2학년) -->
+    <div class="bg-amber-500/90 border-t border-amber-500 px-4 py-1.5 text-slate-900 shadow-inner">
       <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2">
           <span class="text-xs font-black text-amber-950 flex items-center gap-1">
             <i class="fa-solid fa-graduation-cap"></i> 학년 선택:
           </span>
           <div class="inline-flex rounded-xl bg-amber-600/50 p-1 shadow-sm gap-1" id="classTabs">
-            <button onclick="switchClass('3학년')" id="tab-3학년" class="px-4 py-1.5 rounded-lg text-xs font-extrabold transition">3학년</button>
-            <button onclick="switchClass('2학년')" id="tab-2학년" class="px-4 py-1.5 rounded-lg text-xs font-extrabold transition">2학년</button>
+            <button onclick="switchClass('3학년')" id="tab-3학년" class="px-4 py-1 rounded-lg text-xs font-extrabold transition">3학년</button>
+            <button onclick="switchClass('2학년')" id="tab-2학년" class="px-4 py-1 rounded-lg text-xs font-extrabold transition">2학년</button>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <span id="currentClassBadge" class="text-xs bg-white text-amber-900 font-black px-3 py-1 rounded-full shadow-sm border border-amber-300">
-            현재 [3학년] 주문 화면
+          <span id="currentClassBadge" class="text-xs bg-white text-amber-900 font-black px-3 py-0.5 rounded-full shadow-sm border border-amber-300">
+            현재 [3학년] 화면
           </span>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- 실시간 미연동 시 안내 배너 -->
-  <div id="localWarningBanner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900">
+  <!-- 실시간 미연동 로컬 모드 안내 배너 -->
+  <div id="localWarningBanner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900">
     <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
-        <span><b>현재 단일 기기(로컬) 모드입니다.</b> 학생 스마트폰과 주문이 실시간 합쳐지려면 Firebase 키 연동이 필요합니다.</span>
+        <span><b>현재 단일 기기(로컬) 모드입니다.</b> 스마트폰-PC 실시간 동기화를 위해 FIREBASE_CONFIG 키를 입력해주세요.</span>
       </div>
       <button onclick="openFirebaseGuideModal()" class="shrink-0 font-bold underline hover:text-amber-700">연동 방법 보기</button>
     </div>
@@ -83,31 +97,41 @@
 
   <main class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- 좌측: 학생 선택 및 메뉴 카탈로그 (2열 차지) -->
+    <!-- 좌측: 학생 선택 및 메뉴 선택 카탈로그 (2열 차지) -->
     <div class="lg:col-span-2 space-y-5">
 
-      <!-- 주문자 이름 선택 섹션 -->
-      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
-        <div class="flex justify-between items-center mb-2">
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-            <i class="fa-solid fa-id-card text-amber-500 mr-1"></i> <span id="studentSectionClassTitle">3학년</span> 주문자 학생 선택 (본인 이름 클릭)
-          </label>
-          <span class="text-[11px] text-slate-400">선택된 학년 안에서 명단이 공유됩니다</span>
-        </div>
+      <!-- ⭐️ [학생 이름 선택 및 기기 락킹 섹션] ⭐️ -->
+      <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
         
+        <!-- 상단 라벨 및 락킹 상태 배지 -->
+        <div class="flex flex-wrap justify-between items-center mb-2.5 gap-2">
+          <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-id-card text-amber-500"></i> 
+            <span id="studentSectionClassTitle">3학년</span> 주문자 학생
+          </label>
+
+          <!-- 기기 락킹 상태 칩 -->
+          <div id="deviceLockBadgeContainer">
+            <!-- 자바스크립트가 동적으로 관리자 기기인지 학생 귀속 기기인지 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 새 학생 이름 추가 입력창 -->
         <div class="flex gap-2 mb-3">
           <input type="text" id="newStudentInput" placeholder="새 학생 이름 추가 (예: 김철수)" 
                  onkeypress="if(event.key === 'Enter') addNewStudent()"
-                 class="flex-1 border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition">
-          <button onclick="addNewStudent()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-sm transition shrink-0 active:scale-95">
+                 class="flex-1 border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition bg-slate-50/50">
+          <button onclick="addNewStudent()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-sm transition shrink-0 active:scale-95 shadow-sm">
             <i class="fa-solid fa-user-plus mr-1"></i> 추가
           </button>
         </div>
 
+        <!-- 학생 목록 컨테이너 -->
         <div id="studentListContainer" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
           <span class="text-xs text-slate-400 py-1">학생 목록을 불러오는 중...</span>
         </div>
 
+        <!-- 하단 상태 안내 -->
         <div class="mt-3 flex flex-wrap justify-between items-center text-xs border-t border-slate-100 pt-3 gap-2">
           <span id="currentStatusText" class="text-slate-500 font-medium">이름을 선택해야 메뉴를 담을 수 있습니다.</span>
           <span id="userBudgetBadge" class="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
@@ -116,7 +140,7 @@
         </div>
       </section>
 
-      <!-- 메뉴 선택 섹션 -->
+      <!-- 메뉴 카탈로그 섹션 -->
       <section class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
           <h2 class="text-base md:text-lg font-bold flex items-center gap-2">
@@ -126,6 +150,32 @@
             <input type="text" id="menuSearch" oninput="renderMenus()" placeholder="메뉴 검색..." 
                    class="text-xs border border-slate-300 rounded-xl pl-8 pr-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-amber-400">
             <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+          </div>
+        </div>
+
+        <!-- 🏆 [신규: 주간·월간 명예의 전당 인기 메뉴 랭킹 전광판] 🏆 -->
+        <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-2xl p-3 mb-3.5 shadow-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-1.5 font-black text-amber-950 text-xs sm:text-sm">
+              <i class="fa-solid fa-trophy text-amber-500"></i>
+              <span>명예의 전당 (인기 랭킹)</span>
+              <span class="text-[10px] text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full font-bold ml-1 hidden sm:inline">누적 통계</span>
+            </div>
+            
+            <!-- 주간 / 월간 토글 버튼 -->
+            <div class="inline-flex rounded-xl bg-amber-200/60 p-0.5 text-xs font-bold text-amber-900 gap-1 shadow-inner">
+              <button onclick="setRankingPeriod('weekly')" id="rankTabWeekly" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-white text-slate-900 shadow transition">
+                📅 이번 주 TOP 5
+              </button>
+              <button onclick="setRankingPeriod('monthly')" id="rankTabMonthly" class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-amber-900/80 hover:text-slate-900 transition">
+                🗓️ 이번 달 TOP 5
+              </button>
+            </div>
+          </div>
+
+          <!-- 랭킹 가로 카드 목록 -->
+          <div id="rankingListContainer" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+            <!-- 자바스크립트가 1위~5위 칩을 동적으로 렌더링 -->
           </div>
         </div>
 
@@ -171,13 +221,14 @@
             <h2 class="text-sm font-bold flex items-center gap-1.5 text-slate-800">
               <i class="fa-solid fa-clipboard-list text-amber-500"></i> <span id="summaryClassTitle">3학년</span> 실시간 집계
             </h2>
-            <p class="text-[11px] text-slate-400 mt-0.5">해당 학년 학생들의 주문만 실시간 합산됩니다</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">전체 학생의 주문이 실시간 합산됩니다</p>
           </div>
           <div class="flex items-center gap-1.5">
-            <button onclick="clearCurrentClassOrdersPrompt()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded-lg border border-red-200 flex items-center gap-1 font-semibold transition">
+            <!-- ⭐️ [비우기 버튼: 선생님 관리자 기기에서만 노출됨 / 학생 화면에서는 아예 숨김] ⭐️ -->
+            <button id="adminClearBtn" onclick="clearCurrentClassOrdersPrompt()" class="hidden text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1 font-bold transition shadow-sm">
               <i class="fa-solid fa-trash-can"></i> 비우기
             </button>
-            <button onclick="copySummaryText()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-300 flex items-center gap-1 font-semibold transition">
+            <button onclick="copySummaryText()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-300 flex items-center gap-1 font-bold transition shadow-sm">
               <i class="fa-solid fa-copy"></i> 복사
             </button>
           </div>
@@ -219,6 +270,17 @@
     </div>
   </main>
 
+  <!-- 하단 교사용 관리자 기기 등록 안내 푸터 -->
+  <footer class="text-center py-6 text-[11px] text-slate-400">
+    <div class="flex items-center justify-center gap-3">
+      <span>방과후 한솥 실시간 공동 주문 시스템</span>
+      <span>•</span>
+      <button onclick="openAdminAuthModalDirect()" class="hover:underline hover:text-slate-600 transition flex items-center gap-1">
+        <i class="fa-solid fa-lock text-[10px]"></i> <span id="footerAdminLockStatus">교사용 관리자 기기 인증</span>
+      </button>
+    </div>
+  </footer>
+
   <!-- 모바일 접속 QR 코드 모달 -->
   <div id="qrModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
@@ -226,7 +288,7 @@
         <i class="fa-solid fa-qrcode"></i>
       </div>
       <h3 class="text-lg font-bold text-slate-800"><span id="qrModalClassTitle">3학년</span> 모바일 참여 QR</h3>
-      <p class="text-xs text-slate-500">휴대폰 카메라로 스캔하면 <b>선택된 학년</b>으로 자동 접속되어 주문할 수 있습니다.</p>
+      <p class="text-xs text-slate-500">학생들은 휴대폰 카메라로 QR코드를 비추면 해당 학년으로 즉시 접속되어 주문할 수 있습니다.</p>
       <div id="qrcode" class="flex justify-center my-4 p-3 bg-slate-50 rounded-2xl border border-slate-200"></div>
       <button onclick="closeQRModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 rounded-xl text-sm transition">닫기</button>
     </div>
@@ -237,15 +299,16 @@
     <div class="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
       <div class="flex justify-between items-center mb-4 pb-2 border-b">
         <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-shield-halved text-amber-500"></i> 메뉴 카탈로그 관리자
+          <i class="fa-solid fa-shield-halved text-amber-500"></i> 메뉴 카탈로그 & 기기 권한 관리자
         </h3>
         <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
 
-      <div id="adminAuthSection" class="py-10 text-center space-y-3">
-        <p class="text-sm text-slate-600">관리자 비밀번호를 입력해주세요. (기본 비밀번호: <b>1234</b>)</p>
+      <!-- 관리자 모달 비밀번호 인증 구역 -->
+      <div id="adminAuthSection" class="py-10 text-center space-y-4">
+        <p class="text-sm text-slate-600">선생님 관리자 비밀번호를 입력해주세요. (기본 비밀번호: <b>1234</b>)</p>
         <div class="flex justify-center gap-2">
           <input type="password" id="adminPassword" placeholder="비밀번호" 
                  onkeypress="if(event.key === 'Enter') verifyAdminPassword()"
@@ -256,9 +319,23 @@
         </div>
       </div>
 
+      <!-- 관리자 편집 화면 -->
       <div id="adminEditSection" class="hidden flex-1 overflow-hidden flex flex-col">
+        <div class="bg-amber-50 p-3 rounded-2xl border border-amber-200 mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div>
+            <span class="font-bold text-amber-950 flex items-center gap-1.5">
+              <i class="fa-solid fa-crown text-amber-600"></i> 이 기기 권한: 
+              <b class="text-slate-900" id="currentDeviceAdminStatusText">관리자 기기로 등록됨</b>
+            </span>
+            <p class="text-[11px] text-amber-900 mt-0.5">이 기기에서는 [비우기], [관리자], [학생 삭제] 권한이 모두 열립니다.</p>
+          </div>
+          <button onclick="toggleAdminDeviceRegistration()" id="btnAdminDeviceToggle" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">
+            기기 등록 해제
+          </button>
+        </div>
+
         <div class="flex justify-between items-center mb-2.5">
-          <span class="text-xs text-slate-500">메뉴 변경 시 모든 학년(3학년, 2학년)에 공통 반영됩니다.</span>
+          <span class="text-xs text-slate-500">핸들을 드래그해 순서를 바꿀 수 있습니다. (전 학년 공통 적용)</span>
           <button onclick="addNewMenuRow()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition">
             + 새 메뉴 추가
           </button>
@@ -266,7 +343,7 @@
         <div id="adminMenuList" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs border border-slate-200 rounded-xl p-3 bg-slate-50">
         </div>
         <div class="pt-4 mt-2 border-t border-slate-200 flex justify-between items-center gap-2">
-          <button onclick="resetToDefaultMenusPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-2 rounded-xl text-xs border border-rose-200 transition">
+          <button onclick="resetToDefaultMenusPrompt()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-rose-200 transition">
             기본 한솥 메뉴로 리셋
           </button>
           <div class="flex gap-2">
@@ -295,7 +372,7 @@
       </div>
       <div class="text-xs text-slate-600 space-y-3 leading-relaxed">
         <p class="font-bold text-slate-800">Q. 왜 스마트폰에서 담아도 PC에 안 합쳐지나요?</p>
-        <p>무료 Firebase 키 6줄이 연결되어야 학생들의 휴대폰과 교실 PC가 실시간으로 통신합니다.</p>
+        <p>Google Firebase 실시간 키 6줄이 연결되어야 학생들의 휴대폰과 교실 PC가 실시간으로 통신합니다.</p>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
           <p class="font-bold text-amber-700">💡 키 설정 위치:</p>
           <p>코드 상단의 <b>FIREBASE_CONFIG</b> 따옴표 안에 발급받으신 6개 키 값을 넣으신 후 GitHub에 Push하시면 완료됩니다.</p>
@@ -323,7 +400,7 @@
 
   <div id="customConfirmModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-5 max-w-sm w-full text-center space-y-3 shadow-xl">
-      <div class="w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-rose-100 text-rose-600">
+      <div id="confirmIcon" class="w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-rose-100 text-rose-600">
         <i class="fa-solid fa-triangle-exclamation"></i>
       </div>
       <h4 id="confirmTitle" class="text-base font-bold text-slate-800">확인</h4>
@@ -332,7 +409,7 @@
         <button onclick="handleConfirmResponse(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
           취소
         </button>
-        <button onclick="handleConfirmResponse(true)" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition">
+        <button id="confirmConfirmBtn" onclick="handleConfirmResponse(true)" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition">
           진행
         </button>
       </div>
@@ -348,16 +425,16 @@
     // 기존에 발급받아 쓰시던 키를 아래 따옴표 안에 그대로 입력해 주세요.
     // =========================================================================
     const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA_Ohju_rI9VHmY8JLNGN2ENyv38WLdnKc",
-  authDomain: "afterschool-order.firebaseapp.com",
-  projectId: "afterschool-order",
-  storageBucket: "afterschool-order.firebasestorage.app",
-  messagingSenderId: "230836149524",
-  appId: "1:230836149524:web:ab2e74697f31dfa7c67601"
+      apiKey: "AIzaSyA_Ohju_rI9VHmY8JLNGN2ENyv38WLdnKc",
+      authDomain: "afterschool-order.firebaseapp.com",
+      projectId: "afterschool-order",
+      storageBucket: "afterschool-order.firebasestorage.app",
+      messagingSenderId: "230836149524",
+      appId: "1:230836149524:web:ab2e74697f31dfa7c67601"
     };
     // =========================================================================
 
-    // 기본 한솥 메뉴 데이터
+    // 기본 한솥 메뉴 데이터 (107개 카탈로그)
     const defaultMenus = [
       // 1) 도시락
       { id: 1, category: "도시락", name: "카츠카츠 고기고기", price: 8000, img: "images/카츠카츠 고기고기.jpg" },
@@ -486,8 +563,12 @@
     ];
 
     // =========================================================================
-    // ⭐️ [학년 관리 로직: 3학년 / 2학년] ⭐️
+    // ⭐️ [권한 및 락킹(귀속) 핵심 상태 관리] ⭐️
+    // 1) isAdminDevice: 선생님 관리자 기기 여부 (true면 비우기, 관리자버튼, 학생삭제 활성화)
+    // 2) lockedStudentName: 학생 기기 전용 귀속 이름 (자기 폰에서는 자기 주문만 조작)
     // =========================================================================
+    let isAdminDevice = localStorage.getItem('hansot_is_admin_device') === 'true';
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialClassFromUrl = urlParams.get('class');
     const validClasses = ['3학년', '2학년'];
@@ -497,7 +578,19 @@
       ? initialClassFromUrl
       : (validClasses.includes(storedClass) ? storedClass : '3학년');
 
-    // 학년별 LocalStorage 키 헬퍼
+    // 학생 전용 기기 락킹(귀속) 정보 조회
+    function getLockedStudentName(cls = currentClass) {
+      return localStorage.getItem(`hansot_locked_student_${cls}`) || "";
+    }
+    function setLockedStudentName(name, cls = currentClass) {
+      if (name) {
+        localStorage.setItem(`hansot_locked_student_${cls}`, name);
+      } else {
+        localStorage.removeItem(`hansot_locked_student_${cls}`);
+      }
+    }
+
+    // 학년별 로컬 스토리지 헬퍼
     function getStoredMenus() {
       try {
         const saved = localStorage.getItem('hansot_menus_v3');
@@ -525,15 +618,32 @@
       return [];
     }
 
+    // 🏆 [신규: 누적 랭킹 통계 로컬 스토리지 헬퍼 - 비우기 버튼을 눌러도 영구 보존!]
+    function getStoredRankingStats() {
+      try {
+        const saved = localStorage.getItem('hansot_menu_rankings_v1');
+        if (saved) return JSON.parse(saved);
+      } catch (e) { console.warn(e); }
+      return {};
+    }
+
     function saveLocalMenus(data) { localStorage.setItem('hansot_menus_v3', JSON.stringify(data)); }
     function saveLocalStudents(data, cls = currentClass) { localStorage.setItem(`hansot_students_${cls}`, JSON.stringify(data)); }
     function saveLocalOrders(data, cls = currentClass) { localStorage.setItem(`hansot_orders_${cls}`, JSON.stringify(data)); }
+    function saveLocalRankingStats(data) { localStorage.setItem('hansot_menu_rankings_v1', JSON.stringify(data)); }
 
     // State Variables
     let menus = getStoredMenus();
     let orders = getStoredOrders(currentClass); 
     let savedStudents = getStoredStudents(currentClass);
-    let currentUserName = localStorage.getItem(`hansot_user_${currentClass}`) || "";
+    let rankingStats = getStoredRankingStats(); // 🏆 누적 통계
+    let currentRankingPeriod = 'weekly'; // 'weekly' or 'monthly'
+    
+    // 학생 기기는 귀속된 이름으로 자동 고정, 관리자 기기는 자유 선택 허용
+    let currentUserName = isAdminDevice 
+      ? (localStorage.getItem(`hansot_user_${currentClass}`) || "") 
+      : (getLockedStudentName(currentClass) || "");
+
     let selectedCategory = "도시락";
     let isConnected = false;
     let db = null;
@@ -542,9 +652,24 @@
     let unsubscribeOrders = null;
     let unsubscribeStudents = null;
     let unsubscribeMenus = null;
+    let unsubscribeRanking = null;
 
     const BUDGET_LIMIT = 8000;
     const ADMIN_PASS = "1234";
+
+    // 🏆 [주차 및 월 키 생성 헬퍼]
+    function getWeekKey(date = new Date()) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    function getMonthKey(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
 
     // 커스텀 알림/확인창
     window.showNotice = function(message, title = "안내", type = "info") {
@@ -573,10 +698,20 @@
       document.getElementById('customNoticeModal').classList.add('hidden');
     };
 
-    window.showConfirm = function(message, callback, title = "확인 요청") {
+    window.showConfirm = function(message, callback, title = "확인 요청", isDanger = false) {
       confirmCallback = callback;
       document.getElementById('confirmTitle').innerText = title;
       document.getElementById('confirmMessage').innerText = message;
+      const btn = document.getElementById('confirmConfirmBtn');
+      const icon = document.getElementById('confirmIcon');
+
+      if (isDanger) {
+        btn.className = "flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition";
+        icon.className = "w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-rose-100 text-rose-600";
+      } else {
+        btn.className = "flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl text-xs transition";
+        icon.className = "w-10 h-10 rounded-full flex items-center justify-center mx-auto text-lg bg-amber-100 text-amber-700";
+      }
       document.getElementById('customConfirmModal').classList.remove('hidden');
     };
 
@@ -586,19 +721,126 @@
       confirmCallback = null;
     };
 
+    // =========================================================================
+    // ⭐️ [선생님 기기 락킹 & UI 권한 제어] ⭐️
+    // =========================================================================
+    function applyDevicePermissionsUI() {
+      const adminHeaderBtn = document.getElementById('adminHeaderBtn');
+      const adminClearBtn = document.getElementById('adminClearBtn');
+      const headerAdminBadge = document.getElementById('headerAdminBadge');
+      const footerStatus = document.getElementById('footerAdminLockStatus');
+
+      if (isAdminDevice) {
+        // 선생님 PC/기기: 비우기 버튼 노출, 관리자 버튼 노출, 배지 표시
+        adminHeaderBtn.classList.remove('hidden');
+        adminClearBtn.classList.remove('hidden');
+        headerAdminBadge.classList.remove('hidden');
+        footerStatus.innerHTML = `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> 관리자 기기 등록됨</span>`;
+      } else {
+        // 학생 스마트폰/일반 PC: 비우기 버튼 완전 숨김, 관리자 버튼 완전 숨김!
+        adminHeaderBtn.classList.add('hidden');
+        adminClearBtn.classList.add('hidden');
+        headerAdminBadge.classList.add('hidden');
+        footerStatus.innerText = "교사용 관리자 기기 인증";
+      }
+
+      renderDeviceLockBadge();
+      renderStudentList();
+      updateUserStatus();
+    }
+
+    // 로고 클릭 시 관리자 인증 트리거
+    window.triggerAdminAuthFromLogo = function() {
+      if (isAdminDevice) {
+        openAdminModal();
+      } else {
+        openAdminAuthModalDirect();
+      }
+    };
+
+    window.openAdminAuthModalDirect = function() {
+      openAdminModal();
+      document.getElementById('adminAuthSection').classList.remove('hidden');
+      document.getElementById('adminEditSection').classList.add('hidden');
+      document.getElementById('adminPassword').focus();
+    };
+
+    // 관리자 기기 등록 해제 토글
+    window.toggleAdminDeviceRegistration = function() {
+      if (isAdminDevice) {
+        showConfirm("이 기기의 관리자 권한을 해제하시겠습니까?\n해제 후에는 [비우기] 버튼과 [관리자] 버튼이 화면에서 사라집니다.", () => {
+          isAdminDevice = false;
+          localStorage.removeItem('hansot_is_admin_device');
+          applyDevicePermissionsUI();
+          closeAdminModal();
+          showNotice("관리자 기기 등록이 해제되었습니다.\n이제 학생 모드로 작동합니다.", "권한 해제", "info");
+        });
+      }
+    };
+
+    // ⭐️ [학생 기기 락킹 상태 배지 렌더링] ⭐️
+    function renderDeviceLockBadge() {
+      const container = document.getElementById('deviceLockBadgeContainer');
+      const lockedName = getLockedStudentName(currentClass);
+
+      if (isAdminDevice) {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 bg-slate-900 text-amber-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-slate-700">
+            <i class="fa-solid fa-crown text-amber-400"></i>
+            <span>선생님 관리자 기기 (모든 권한 허용)</span>
+          </div>
+        `;
+      } else if (lockedName) {
+        container.innerHTML = `
+          <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+            <i class="fa-solid fa-lock text-emerald-600"></i>
+            <span>내 등록 기기: <b class="underline decoration-emerald-400 underline-offset-2">${lockedName}</b></span>
+            <button onclick="promptUnlockStudentDevice()" class="ml-1 text-[11px] text-slate-400 hover:text-rose-600 bg-white hover:bg-rose-50 px-2 py-0.5 rounded-md border border-slate-200 font-semibold transition" title="이름을 잘못 등록했을 때 변경">
+              이름 변경
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <span class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">
+            <i class="fa-solid fa-hand-pointer mr-1"></i> 본인 이름을 터치해 기기에 등록하세요
+          </span>
+        `;
+      }
+    }
+
+    // 학생 기기 등록 해제(이름 재설정)
+    window.promptUnlockStudentDevice = function() {
+      const lockedName = getLockedStudentName(currentClass);
+      showConfirm(`현재 이 스마트폰(PC)은 [${lockedName}] 학생의 기기로 등록되어 있습니다.\n\n정말 기기 등록을 해제하고 다른 학생 이름을 선택하시겠습니까?`, () => {
+        setLockedStudentName("", currentClass);
+        currentUserName = "";
+        localStorage.removeItem(`hansot_user_${currentClass}`);
+        updateUserStatus();
+        renderDeviceLockBadge();
+        renderStudentList();
+        renderApp();
+        showNotice("기기 등록이 해제되었습니다. 본인 이름을 다시 선택해주세요.", "기기 초기화", "info");
+      });
+    };
+
     // ⭐️ [학년 전환 함수] ⭐️
     window.switchClass = function(newClass) {
       currentClass = newClass;
       localStorage.setItem('hansot_current_class', currentClass);
 
-      // 해당 학년의 사용자/데이터로 전환
-      currentUserName = localStorage.getItem(`hansot_user_${currentClass}`) || "";
+      // 학생 기기는 해당 학년의 귀속 이름으로 고정
+      if (isAdminDevice) {
+        currentUserName = localStorage.getItem(`hansot_user_${currentClass}`) || "";
+      } else {
+        currentUserName = getLockedStudentName(currentClass) || "";
+      }
+
       orders = getStoredOrders(currentClass);
       savedStudents = getStoredStudents(currentClass);
 
       updateClassUI();
-      renderStudentList();
-      updateUserStatus();
+      applyDevicePermissionsUI();
       renderApp();
 
       if (isConnected && db) {
@@ -607,18 +849,17 @@
     };
 
     function updateClassUI() {
-      // 탭 버튼 스타일 갱신 (3학년 / 2학년)
       validClasses.forEach(cls => {
         const btn = document.getElementById(`tab-${cls}`);
         if (!btn) return;
         if (cls === currentClass) {
-          btn.className = "px-4 py-1.5 rounded-lg text-xs font-black bg-white text-slate-900 shadow transition scale-105";
+          btn.className = "px-4 py-1 rounded-lg text-xs font-black bg-white text-slate-900 shadow transition scale-105";
         } else {
-          btn.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-amber-950/80 hover:bg-amber-500/50 hover:text-white transition";
+          btn.className = "px-4 py-1 rounded-lg text-xs font-bold text-amber-950/80 hover:bg-amber-500/50 hover:text-white transition";
         }
       });
 
-      document.getElementById('currentClassBadge').innerText = `현재 [${currentClass}] 주문 화면`;
+      document.getElementById('currentClassBadge').innerText = `현재 [${currentClass}] 화면`;
       document.getElementById('studentSectionClassTitle').innerText = currentClass;
       document.getElementById('summaryClassTitle').innerText = currentClass;
       document.getElementById('studentDetailClassTitle').innerText = currentClass;
@@ -633,7 +874,7 @@
       const syncLabel = document.getElementById('syncStatusLabel');
       const syncDot = document.getElementById('syncDot');
 
-      // 학년별 독립 컬렉션 (orders_3학년, orders_2학년)
+      // orders_3학년, orders_2학년 컬렉션 분리 리스닝
       const ordersCol = collection(db, `orders_${currentClass}`);
       unsubscribeOrders = onSnapshot(ordersCol, (snapshot) => {
         orders = snapshot.docs.map(docSnap => ({
@@ -644,11 +885,11 @@
         renderApp();
       }, (err) => {
         console.error("Orders listener error:", err);
-        syncLabel.innerText = "동기화 오류 (규칙 확인 필요)";
-        syncDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        syncLabel.innerText = "동기화 오류 (Firestore 규칙 확인)";
+        syncDot.className = "w-2 h-2 rounded-full bg-rose-500";
       });
 
-      // 학년별 독립 학생 컬렉션 (students_3학년, students_2학년)
+      // students_3학년, students_2학년 컬렉션 분리 리스닝
       const studentsCol = collection(db, `students_${currentClass}`);
       unsubscribeStudents = onSnapshot(studentsCol, (snapshot) => {
         const list = snapshot.docs.map(docSnap => docSnap.data().name).filter(Boolean);
@@ -667,15 +908,16 @@
       const warningBanner = document.getElementById('localWarningBanner');
 
       updateClassUI();
-      renderStudentList();
+      applyDevicePermissionsUI();
       renderMenus();
+      renderRankingBoard();
       renderApp();
 
       const hasFirebaseKey = Boolean(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
 
       if (!hasFirebaseKey) {
-        syncLabel.innerText = "로컬 모드 (기기간 실시간 연동 미설정)";
-        syncDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+        syncLabel.innerText = "로컬 모드 (실시간 동기화 미연동)";
+        syncDot.className = "w-2 h-2 rounded-full bg-amber-600";
         warningBanner.classList.remove('hidden');
         return;
       }
@@ -685,14 +927,13 @@
         db = getFirestore(app);
         isConnected = true;
 
-        syncLabel.innerText = "🟢 전 기기 실시간 동기화 연결됨";
-        syncDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot";
+        syncLabel.innerText = "실시간 클라우드 연결됨";
+        syncDot.className = "w-2 h-2 rounded-full bg-emerald-600 pulse-dot";
         warningBanner.classList.add('hidden');
 
-        // 현재 학년 데이터 구독 시작
         listenToClassData();
 
-        // 관리자 메뉴는 전 학년 공통 공유
+        // 메뉴 설정 리스너
         const menuConfigDoc = doc(db, 'settings', 'menus');
         unsubscribeMenus = onSnapshot(menuConfigDoc, (docSnap) => {
           if (docSnap.exists() && Array.isArray(docSnap.data().list) && docSnap.data().list.length > 0) {
@@ -705,16 +946,175 @@
           console.error("Menus listener error:", err);
         });
 
+        // 🏆 [신규: 누적 랭킹 통계 Firestore 리스너 - 비우기와 무관하게 영구 보존]
+        const rankingDoc = doc(db, 'stats', 'menu_rankings');
+        unsubscribeRanking = onSnapshot(rankingDoc, (docSnap) => {
+          if (docSnap.exists() && docSnap.data().counts) {
+            rankingStats = docSnap.data().counts;
+            saveLocalRankingStats(rankingStats);
+            renderRankingBoard();
+            renderMenus();
+          }
+        }, (err) => {
+          console.warn("Ranking stats listener note:", err);
+        });
+
       } catch (err) {
         console.error("Firebase connection error:", err);
         isConnected = false;
         syncLabel.innerText = "클라우드 연결 실패 (로컬 모드)";
-        syncDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        syncDot.className = "w-2 h-2 rounded-full bg-rose-500";
         warningBanner.classList.remove('hidden');
       }
     }
 
-    // 학생 등록 및 관리
+    // 🏆 [신규: 메뉴 주문 시 누적 랭킹 통계 업데이트 함수]
+    async function updateRankingStats(menuName, delta) {
+      const weekKey = getWeekKey();
+      const monthKey = getMonthKey();
+
+      if (!rankingStats[menuName]) {
+        rankingStats[menuName] = { total: 0, weekly: {}, monthly: {} };
+      }
+      const item = rankingStats[menuName];
+      if (!item.weekly) item.weekly = {};
+      if (!item.monthly) item.monthly = {};
+
+      item.total = Math.max(0, (item.total || 0) + delta);
+      item.weekly[weekKey] = Math.max(0, (item.weekly[weekKey] || 0) + delta);
+      item.monthly[monthKey] = Math.max(0, (item.monthly[monthKey] || 0) + delta);
+
+      saveLocalRankingStats(rankingStats);
+      renderRankingBoard();
+      renderMenus();
+
+      if (isConnected && db) {
+        try {
+          const rankingDocRef = doc(db, 'stats', 'menu_rankings');
+          await setDoc(rankingDocRef, { counts: rankingStats, updatedAt: Date.now() }, { merge: true });
+        } catch (err) {
+          console.error("Ranking stats save error:", err);
+        }
+      }
+    }
+
+    // 🏆 [신규: 랭킹 기간(주간/월간) 전환 함수]
+    window.setRankingPeriod = function(period) {
+      currentRankingPeriod = period;
+      const tabWeekly = document.getElementById('rankTabWeekly');
+      const tabMonthly = document.getElementById('rankTabMonthly');
+
+      if (period === 'weekly') {
+        tabWeekly.className = "px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-white text-slate-900 shadow transition";
+        tabMonthly.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold text-amber-900/80 hover:text-slate-900 transition";
+      } else {
+        tabMonthly.className = "px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-white text-slate-900 shadow transition";
+        tabWeekly.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold text-amber-900/80 hover:text-slate-900 transition";
+      }
+
+      renderRankingBoard();
+      renderMenus();
+    };
+
+    // 🏆 [신규: 현재 기간 기준 순위 목록 계산 헬퍼]
+    function calculateRankings(period = currentRankingPeriod) {
+      const weekKey = getWeekKey();
+      const monthKey = getMonthKey();
+      const countMap = {};
+
+      // 1. 누적 데이터에서 카운트 취합
+      Object.keys(rankingStats).forEach(menuName => {
+        const data = rankingStats[menuName];
+        let cnt = 0;
+        if (period === 'weekly') {
+          cnt = (data.weekly && data.weekly[weekKey]) || 0;
+        } else {
+          cnt = (data.monthly && data.monthly[monthKey]) || 0;
+        }
+        if (cnt > 0) countMap[menuName] = cnt;
+      });
+
+      // 2. 만약 첫 시작이라 누적이 없다면 현재 장바구니 주문도 즉시 반영하여 빈 화면 방지
+      orders.forEach(o => {
+        if (!countMap[o.menuName]) countMap[o.menuName] = 0;
+      });
+
+      const sorted = Object.keys(countMap)
+        .map(name => ({ name, count: countMap[name] }))
+        .filter(item => item.count > 0)
+        .sort((a, b) => b.count - a.count);
+
+      return sorted;
+    }
+
+    // 🏆 [신규: 랭킹 전광판 렌더링 함수]
+    function renderRankingBoard() {
+      const container = document.getElementById('rankingListContainer');
+      if (!container) return;
+      container.innerHTML = "";
+
+      const rankings = calculateRankings(currentRankingPeriod);
+
+      if (rankings.length === 0) {
+        container.innerHTML = `
+          <div class="py-2 px-3 text-xs text-amber-800/80 font-medium flex items-center gap-1.5 bg-white/70 rounded-xl border border-amber-200/80 w-full justify-center">
+            <i class="fa-regular fa-lightbulb text-amber-600"></i>
+            <span>아직 집계된 랭킹 데이터가 없습니다. 맛있는 첫 메뉴를 주문해보세요!</span>
+          </div>
+        `;
+        return;
+      }
+
+      const top5 = rankings.slice(0, 5);
+      const medals = ['👑 1위', '🥈 2위', '🥉 3위', '4위', '5위'];
+
+      top5.forEach((item, idx) => {
+        const badge = medals[idx] || `${idx + 1}위`;
+        const card = document.createElement('div');
+        
+        let rankColorClass = "bg-white border-amber-200 text-slate-800 hover:border-amber-400";
+        let badgeColorClass = "bg-slate-100 text-slate-700";
+
+        if (idx === 0) {
+          rankColorClass = "bg-amber-400/90 border-amber-500 text-amber-950 font-black shadow-xs ring-1 ring-amber-400 hover:scale-[1.02]";
+          badgeColorClass = "bg-amber-950 text-amber-300";
+        } else if (idx === 1) {
+          rankColorClass = "bg-slate-200/90 border-slate-300 text-slate-900 font-bold shadow-xs hover:scale-[1.02]";
+          badgeColorClass = "bg-slate-700 text-white";
+        } else if (idx === 2) {
+          rankColorClass = "bg-amber-100/90 border-amber-300 text-amber-900 font-bold shadow-xs hover:scale-[1.02]";
+          badgeColorClass = "bg-amber-800 text-amber-100";
+        }
+
+        card.className = `flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs shrink-0 cursor-pointer transition shadow-xs ${rankColorClass}`;
+        card.onclick = () => filterByRankMenu(item.name);
+        card.title = `클릭하면 [${item.name}] 메뉴로 바로 이동합니다`;
+
+        card.innerHTML = `
+          <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md ${badgeColorClass}">${badge}</span>
+          <span class="truncate max-w-[110px] sm:max-w-[140px] font-bold">${item.name}</span>
+          <span class="text-[11px] opacity-80 font-extrabold shrink-0">(${item.count}회)</span>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // 🏆 [신규: 랭킹 클릭 시 해당 메뉴 자동 검색 및 포커스]
+    window.filterByRankMenu = function(menuName) {
+      const searchInput = document.getElementById('menuSearch');
+      if (searchInput) {
+        searchInput.value = menuName;
+        // 카테고리를 해당 메뉴 카테고리로 자동 맞춤
+        const targetMenu = menus.find(m => m.name === menuName);
+        if (targetMenu && targetMenu.category) {
+          setCategory(targetMenu.category);
+        } else {
+          renderMenus();
+        }
+      }
+    };
+
+    // ⭐️ [새 학생 추가 및 기기 락킹] ⭐️
     window.addNewStudent = async function() {
       const input = document.getElementById('newStudentInput');
       const val = input.value.trim();
@@ -723,7 +1123,14 @@
         return;
       }
       if (savedStudents.includes(val)) {
-        showNotice(`이미 [${currentClass}]에 등록된 학생 이름입니다.`, "중복 안내", "warning");
+        showNotice(`이미 [${currentClass}]에 등록된 학생 이름입니다. 아래 명단에서 이름을 클릭하세요.`, "중복 안내", "warning");
+        return;
+      }
+
+      // 학생 기기인데 이미 다른 이름으로 락킹되어 있는 경우 장난 방지
+      const lockedName = getLockedStudentName(currentClass);
+      if (!isAdminDevice && lockedName && lockedName !== val) {
+        showNotice(`이 기기는 이미 [${lockedName}] 학생의 기기로 락킹되어 있습니다.\n다른 학생 이름을 새로 등록할 수 없습니다.`, "권한 안내", "warning");
         return;
       }
 
@@ -738,10 +1145,43 @@
       }
 
       input.value = "";
-      selectStudent(val);
+
+      // 만약 학생 기기라면 새 이름 추가와 동시에 기기 락킹
+      if (!isAdminDevice && !lockedName) {
+        setLockedStudentName(val, currentClass);
+        currentUserName = val;
+        localStorage.setItem(`hansot_user_${currentClass}`, currentUserName);
+        applyDevicePermissionsUI();
+        showNotice(`이 기기가 [${val}] 학생의 전용 기기로 안전하게 등록되었습니다!`, "기기 등록 완료", "success");
+      } else {
+        selectStudent(val);
+      }
     };
 
+    // ⭐️ [학생 이름 선택: 락킹 검증 및 귀속 처리] ⭐️
     window.selectStudent = function(name) {
+      const lockedName = getLockedStudentName(currentClass);
+
+      // 1) 학생 기기인데 이미 다른 친구 이름으로 잠겨 있는 경우 ➡️ 타인 주문 조작 차단!
+      if (!isAdminDevice && lockedName && lockedName !== name) {
+        showNotice(`현재 기기는 [${lockedName}] 학생으로 안전하게 귀속(락킹)되어 있습니다.\n다른 친구(${name})의 장바구니는 수정할 수 없습니다.`, "접근 차단", "warning");
+        return;
+      }
+
+      // 2) 학생 기기인데 아직 락킹되지 않은 최초 접속인 경우 ➡️ 본인 이름으로 귀속 여부 확인
+      if (!isAdminDevice && !lockedName) {
+        showConfirm(`이 스마트폰(PC)을 [${name}] 학생의 전용 기기로 등록(귀속)하시겠습니까?\n\n등록 후에는 본인의 장바구니만 안전하게 관리할 수 있습니다.`, () => {
+          setLockedStudentName(name, currentClass);
+          currentUserName = name;
+          localStorage.setItem(`hansot_user_${currentClass}`, currentUserName);
+          applyDevicePermissionsUI();
+          renderApp();
+          showNotice(`[${name}] 학생의 기기로 등록 완료되었습니다! 이제 자유롭게 메뉴를 담아보세요.`, "기기 등록 완료", "success");
+        }, "기기 등록 확인");
+        return;
+      }
+
+      // 3) 관리자 기기이거나 본인 기기인 경우 정상 선택
       currentUserName = name;
       localStorage.setItem(`hansot_user_${currentClass}`, currentUserName);
       updateUserStatus();
@@ -749,9 +1189,15 @@
       renderStudentList();
     };
 
+    // ⭐️ [학생 명단 삭제: 오직 선생님 관리자 기기에서만 가능] ⭐️
     window.removeStudent = function(e, name) {
       e.stopPropagation();
-      showConfirm(`[${currentClass}] [${name}] 학생을 목록에서 삭제하시겠습니까?`, async () => {
+      if (!isAdminDevice) {
+        showNotice("학생 명단 삭제 권한은 선생님 관리자 PC에만 부여되어 있습니다.", "권한 없음", "error");
+        return;
+      }
+
+      showConfirm(`[${currentClass}] [${name}] 학생을 명단에서 영구 삭제하시겠습니까?`, async () => {
         savedStudents = savedStudents.filter(s => s !== name);
         saveLocalStudents(savedStudents, currentClass);
         renderStudentList();
@@ -768,9 +1214,10 @@
           updateUserStatus();
           renderApp();
         }
-      });
+      }, "학생 삭제 확인", true);
     };
 
+    // ⭐️ [학생별 주문 여부/금액 실시간 표시] ⭐️
     function renderStudentList() {
       const container = document.getElementById('studentListContainer');
       container.innerHTML = "";
@@ -778,20 +1225,51 @@
         container.innerHTML = `<span class="text-xs text-slate-400 py-1">[${currentClass}]에 등록된 학생이 없습니다. 상단에서 이름을 등록해주세요.</span>`;
         return;
       }
+
+      const lockedName = getLockedStudentName(currentClass);
+
       savedStudents.forEach(name => {
         const isSelected = name === currentUserName;
+        const isMyLockedDevice = (!isAdminDevice && lockedName === name);
+
+        // 해당 학생이 담은 메뉴의 총 금액 및 주문 여부 계산
+        const studentTotal = orders
+          .filter(o => o.userName === name)
+          .reduce((sum, item) => sum + (item.price * item.count), 0);
+        const hasOrdered = studentTotal > 0;
+
         const btn = document.createElement('div');
-        btn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer border transition-all ${
-          isSelected 
-            ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-sm ring-1 ring-amber-400 font-bold scale-[1.02]' 
-            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-        }`;
+        
+        let borderClass = 'bg-white border-dashed border-slate-300 text-slate-600 hover:bg-slate-50';
+        if (isSelected) {
+          borderClass = 'bg-amber-100 border-solid border-amber-400 text-amber-900 shadow-sm ring-2 ring-amber-400 font-extrabold scale-[1.02]';
+        } else if (hasOrdered) {
+          // 주문을 1개라도 담은 학생: 산뜻한 초록색 테두리와 배경으로 즉시 식별
+          borderClass = 'bg-emerald-50/90 border-solid border-emerald-300 text-emerald-900 font-bold hover:bg-emerald-100/70 shadow-xs';
+        } else if (isMyLockedDevice) {
+          borderClass = 'bg-slate-50 border-solid border-slate-300 text-slate-700 font-medium';
+        }
+
+        btn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs cursor-pointer border transition-all ${borderClass}`;
         btn.onclick = () => selectStudent(name);
+
+        // 선생님 관리자 기기 전용 학생 삭제 'X' 버튼
+        const deleteButtonHtml = isAdminDevice
+          ? `<button onclick="removeStudent(event, '${name}')" class="text-slate-400 hover:text-rose-600 ml-1 rounded-full p-0.5" title="학생 삭제 (선생님 전용)"><i class="fa-solid fa-xmark text-[11px]"></i></button>`
+          : ``;
+
+        const lockIconHtml = isMyLockedDevice ? `<i class="fa-solid fa-lock text-[10px] text-emerald-600 ml-0.5"></i>` : ``;
+
+        // 🟢 주문 완료: 체크(✓)와 금액 / ⏳ 미주문: 회색 미주문 라벨
+        const orderStatusBadge = hasOrdered
+          ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-md flex items-center gap-0.5"><i class="fa-solid fa-check text-[9px]"></i>${studentTotal.toLocaleString()}원</span>`
+          : `<span class="text-[10px] text-slate-400 font-normal">미주문</span>`;
+
         btn.innerHTML = `
           <span>${name}</span>
-          <button onclick="removeStudent(event, '${name}')" class="text-slate-400 hover:text-rose-500 ml-1 rounded-full p-0.5" title="삭제">
-            <i class="fa-solid fa-xmark text-[11px]"></i>
-          </button>
+          ${orderStatusBadge}
+          ${lockIconHtml}
+          ${deleteButtonHtml}
         `;
         container.appendChild(btn);
       });
@@ -799,10 +1277,20 @@
 
     function updateUserStatus() {
       const statusText = document.getElementById('currentStatusText');
-      if (currentUserName) {
-        statusText.innerHTML = `현재 선택: <b class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">[${currentClass}] ${currentUserName}</b> (메뉴 담기 가능)`;
+      const lockedName = getLockedStudentName(currentClass);
+
+      if (isAdminDevice) {
+        if (currentUserName) {
+          statusText.innerHTML = `선생님 모드: <b class="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">[${currentClass}] ${currentUserName}</b> 학생 장바구니 제어 중`;
+        } else {
+          statusText.innerText = "학생 이름을 클릭하면 해당 학생의 담은 메뉴를 확인/대리 주문할 수 있습니다.";
+        }
       } else {
-        statusText.innerText = "이름을 등록/선택해야 메뉴를 담을 수 있습니다.";
+        if (lockedName) {
+          statusText.innerHTML = `내 스마트폰 락킹됨: <b class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-300">[${currentClass}] ${lockedName}</b> (본인 메뉴 선택 가능)`;
+        } else {
+          statusText.innerText = "본인 이름을 목록에서 터치하여 스마트폰을 등록해주세요.";
+        }
       }
     }
 
@@ -842,12 +1330,45 @@
         return;
       }
 
+      // 🏆 랭킹 Top 3 메뉴에 왕관 배지를 달아주기 위한 순위 계산
+      const rankings = calculateRankings(currentRankingPeriod);
+      const rankLookup = {};
+      rankings.slice(0, 3).forEach((item, idx) => {
+        rankLookup[item.name] = { rank: idx + 1, count: item.count };
+      });
+
       filtered.forEach(m => {
         const div = document.createElement('div');
-        div.className = "flex flex-col items-center p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-amber-400 transition shadow-sm group";
+        div.className = "flex flex-col items-center p-3.5 bg-slate-50 border border-slate-200 rounded-2xl hover:border-amber-400 transition shadow-sm group relative overflow-hidden";
         
+        // 🏆 1위~3위 랭킹 왕관 배지 HTML
+        let rankBadgeHtml = "";
+        if (rankLookup[m.name]) {
+          const info = rankLookup[m.name];
+          if (info.rank === 1) {
+            rankBadgeHtml = `
+              <div class="absolute top-2 left-2 z-10 bg-amber-400 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1 border border-amber-300">
+                <i class="fa-solid fa-crown text-amber-900"></i> ${currentRankingPeriod === 'weekly' ? '이번 주' : '이번 달'} 1위
+              </div>
+            `;
+          } else if (info.rank === 2) {
+            rankBadgeHtml = `
+              <div class="absolute top-2 left-2 z-10 bg-slate-800 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                🥈 2위 (${info.count}회)
+              </div>
+            `;
+          } else if (info.rank === 3) {
+            rankBadgeHtml = `
+              <div class="absolute top-2 left-2 z-10 bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                🥉 3위 (${info.count}회)
+              </div>
+            `;
+          }
+        }
+
         div.innerHTML = `
           <div class="relative w-48 h-48 mb-3 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            ${rankBadgeHtml}
             <img src="${m.img}" onerror="handleImgError(this)" class="w-48 h-48 object-cover rounded-xl transition duration-300 group-hover:scale-105" alt="${m.name}">
             <div class="hidden absolute inset-0 w-48 h-48 bg-gradient-to-br from-amber-50 to-amber-100 text-amber-800 rounded-xl flex flex-col items-center justify-center p-3 text-center border border-amber-200">
               <i class="fa-solid fa-bowl-rice text-3xl mb-1 text-amber-600"></i>
@@ -877,10 +1398,25 @@
         .reduce((sum, item) => sum + (item.price * item.count), 0);
     }
 
+    // ⭐️ [메뉴 담기: 락킹 검증 및 랭킹 통계 누적] ⭐️
     window.addToCart = async function(menuName, price) {
-      if (!currentUserName) {
-        showNotice(`상단 [${currentClass}] 학생 목록에서 본인 이름을 먼저 등록하고 선택해 주세요!`, "주문자 미선택", "warning");
+      const lockedName = getLockedStudentName(currentClass);
+
+      // 학생 기기인데 본인 락킹이 아직 안 된 경우
+      if (!isAdminDevice && !lockedName) {
+        showNotice(`상단 [${currentClass}] 학생 목록에서 본인 이름을 먼저 터치해 기기에 등록해 주세요!`, "주문자 등록 필요", "warning");
         document.getElementById('newStudentInput').focus();
+        return;
+      }
+
+      // 학생 기기인데 다른 친구 이름으로 조작하려 할 때
+      if (!isAdminDevice && currentUserName !== lockedName) {
+        showNotice(`본인 기기(${lockedName})의 메뉴만 담을 수 있습니다.`, "권한 안내", "warning");
+        return;
+      }
+
+      if (!currentUserName) {
+        showNotice("주문자 이름을 먼저 선택해주세요.", "선택 필요", "warning");
         return;
       }
 
@@ -889,6 +1425,9 @@
         showNotice(`1인당 예산 한도(${BUDGET_LIMIT.toLocaleString()}원)를 초과할 수 없습니다.\n현재 담은 금액: ${currentTotal.toLocaleString()}원\n추가 시 합계: ${(currentTotal + price).toLocaleString()}원`, "한도 초과 안내", "warning");
         return;
       }
+
+      // 🏆 랭킹 누적 카운트 1 증가
+      updateRankingStats(menuName, 1);
 
       const existing = orders.find(o => o.userName === currentUserName && o.menuName === menuName);
 
@@ -929,9 +1468,17 @@
       }
     };
 
+    // ⭐️ [수량 조절: 락킹 검증 및 랭킹 통계 연동] ⭐️
     window.changeMyItemCount = async function(orderId, delta) {
       const item = orders.find(o => o.id === orderId);
-      if (!item || item.userName !== currentUserName) return;
+      if (!item) return;
+
+      const lockedName = getLockedStudentName(currentClass);
+      // 학생 기기인데 타인의 주문을 변경하려 할 때 차단
+      if (!isAdminDevice && item.userName !== lockedName) {
+        showNotice("본인이 담은 메뉴만 수량을 조절할 수 있습니다.", "접근 차단", "warning");
+        return;
+      }
 
       if (delta > 0) {
         const currentTotal = getMyTotalAmount();
@@ -940,6 +1487,9 @@
           return;
         }
       }
+
+      // 🏆 랭킹 누적 카운트 증감 연동
+      updateRankingStats(item.menuName, delta);
 
       if (isConnected && db) {
         try {
@@ -960,9 +1510,19 @@
       }
     };
 
+    // ⭐️ [메뉴 삭제: 락킹 검증 및 랭킹 통계 연동] ⭐️
     window.removeMyItem = async function(orderId) {
       const item = orders.find(o => o.id === orderId);
-      if (!item || item.userName !== currentUserName) return;
+      if (!item) return;
+
+      const lockedName = getLockedStudentName(currentClass);
+      if (!isAdminDevice && item.userName !== lockedName) {
+        showNotice("본인이 담은 메뉴만 삭제할 수 있습니다.", "접근 차단", "warning");
+        return;
+      }
+
+      // 🏆 삭제된 수량만큼 랭킹 누적 카운트 차감
+      updateRankingStats(item.menuName, -item.count);
 
       if (isConnected && db) {
         try {
@@ -976,6 +1536,10 @@
     };
 
     function renderApp() {
+      // 주문 변동 시 상단 학생 명단의 체크/금액 배지도 동시 갱신
+      renderStudentList();
+      renderRankingBoard();
+
       // 1) 내 장바구니 리스트
       const myOrderContainer = document.getElementById('myOrderList');
       const myItems = orders.filter(o => o.userName === currentUserName);
@@ -1041,7 +1605,7 @@
 
       document.getElementById('grandTotal').innerText = `${totalPrice.toLocaleString()}원 (${totalQty}개)`;
 
-      // 3) 학생별 현황
+      // ⭐️ 우측 현황판을 주문완료 vs 미주문자로 그룹 분리
       const userGroup = {};
       orders.forEach(o => {
         if (!userGroup[o.userName]) userGroup[o.userName] = [];
@@ -1049,20 +1613,60 @@
       });
 
       const allStudentsList = document.getElementById('allStudentsList');
-      const studentNames = Object.keys(userGroup);
-      document.getElementById('activeStudentCount').innerText = `참여 ${studentNames.length}명`;
+      const orderedStudentNames = Object.keys(userGroup);
+      const unorderedStudentNames = savedStudents.filter(name => !orderedStudentNames.includes(name));
+      const totalRegistered = savedStudents.length;
+      const orderedCount = orderedStudentNames.length;
       
-      if (studentNames.length === 0) {
-        allStudentsList.innerHTML = `<div class="text-slate-400 text-center py-4">[${currentClass}] 주문한 학생이 없습니다.</div>`;
+      const activeStudentCountEl = document.getElementById('activeStudentCount');
+      if (totalRegistered > 0) {
+        const percent = Math.round((orderedCount / totalRegistered) * 100);
+        activeStudentCountEl.innerHTML = `<span class="text-emerald-600 font-extrabold">${orderedCount}명</span> / ${totalRegistered}명 (${percent}%)`;
       } else {
-        allStudentsList.innerHTML = "";
-        studentNames.forEach(name => {
+        activeStudentCountEl.innerText = `참여 ${orderedCount}명`;
+      }
+
+      allStudentsList.innerHTML = "";
+
+      // ⏳ 아직 주문하지 않은 학생 명단 박스 & 명단 원클릭 복사
+      if (unorderedStudentNames.length > 0) {
+        const unorderBox = document.createElement('div');
+        unorderBox.className = "p-3 bg-amber-50/90 border border-amber-200 rounded-xl mb-3 shadow-xs";
+        unorderBox.innerHTML = `
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-extrabold text-amber-950 text-xs flex items-center gap-1.5">
+              <i class="fa-regular fa-clock text-amber-600"></i> 아직 안 담은 학생 (${unorderedStudentNames.length}명)
+            </span>
+            <button onclick="copyUnorderedStudents()" class="text-[11px] bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-lg font-bold transition shadow-xs flex items-center gap-1">
+              <i class="fa-regular fa-copy"></i> 미주문자 복사
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            ${unorderedStudentNames.map(name => `<span class="px-2 py-0.5 bg-white border border-amber-200 rounded-md text-[11px] text-slate-700 font-medium">${name}</span>`).join('')}
+          </div>
+        `;
+        allStudentsList.appendChild(unorderBox);
+      }
+
+      // 🟢 주문 완료한 학생 상세 목록
+      if (orderedStudentNames.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = "text-slate-400 text-center py-4";
+        emptyDiv.innerText = `[${currentClass}] 주문 완료한 학생이 없습니다.`;
+        allStudentsList.appendChild(emptyDiv);
+      } else {
+        const orderedHeader = document.createElement('div');
+        orderedHeader.className = "text-[11px] font-bold text-slate-500 mb-1.5 flex items-center gap-1";
+        orderedHeader.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i> 주문 완료 목록 (${orderedCount}명)`;
+        allStudentsList.appendChild(orderedHeader);
+
+        orderedStudentNames.forEach(name => {
           const uItems = userGroup[name];
           const uTotal = uItems.reduce((acc, cur) => acc + (cur.price * cur.count), 0);
           const isMe = name === currentUserName;
 
           const card = document.createElement('div');
-          card.className = `p-3 rounded-xl border text-xs transition ${isMe ? 'bg-amber-50/90 border-amber-300 ring-1 ring-amber-300' : 'bg-slate-50 border-slate-200'}`;
+          card.className = `p-3 rounded-xl border text-xs transition mb-2 ${isMe ? 'bg-amber-50/90 border-amber-300 ring-1 ring-amber-300' : 'bg-slate-50 border-slate-200'}`;
           
           const itemListStr = uItems.map(i => `${i.menuName} x${i.count}`).join(', ');
 
@@ -1080,9 +1684,14 @@
       }
     }
 
-    // ⭐️ [현재 학년 주문만 비우기] ⭐️
+    // ⭐️ [선생님 전용: 현재 학년 주문 취합 비우기 - 랭킹 누적 통계는 보존됨] ⭐️
     window.clearCurrentClassOrdersPrompt = function() {
-      showConfirm(`현재 [${currentClass}]의 주문 취합 내역을 전부 초기화하시겠습니까?\n(다른 학년의 주문 데이터는 안전하게 유지됩니다)`, async () => {
+      if (!isAdminDevice) {
+        showNotice("주문 전체 비우기 권한은 선생님 관리자 기기에만 있습니다.", "권한 없음", "error");
+        return;
+      }
+
+      showConfirm(`현재 [${currentClass}]의 모든 학생 장바구니를 초기화하시겠습니까?\n\n(참고: 명예의 전당 주간/월간 인기 랭킹 통계는 안전하게 유지됩니다)`, async () => {
         if (isConnected && db) {
           try {
             const deletePromises = orders.map(o => deleteDoc(doc(db, `orders_${currentClass}`, o.id)));
@@ -1092,11 +1701,43 @@
         orders = [];
         saveLocalOrders(orders, currentClass);
         renderApp();
-        showNotice(`[${currentClass}] 주문 내역이 초기화되었습니다.`, "초기화 완료", "success");
-      });
+        showNotice(`[${currentClass}] 주문 내역이 성공적으로 초기화되었습니다.\n(누적 랭킹 통계는 안전하게 보존되었습니다.)`, "초기화 완료", "success");
+      }, "주문 전체 초기화", true);
     };
 
-    // ⭐️ [현재 학년 주문 내역서 복사] ⭐️
+    // ⭐️ [미주문 학생 명단 전용 원클릭 복사] ⭐️
+    window.copyUnorderedStudents = function() {
+      const userGroup = {};
+      orders.forEach(o => {
+        if (!userGroup[o.userName]) userGroup[o.userName] = [];
+        userGroup[o.userName].push(o);
+      });
+      const orderedStudentNames = Object.keys(userGroup);
+      const unOrdered = savedStudents.filter(name => !orderedStudentNames.includes(name));
+
+      if (unOrdered.length === 0) {
+        showNotice(`[${currentClass}] 모든 학생이 주문을 완료했습니다! 🎉`, "알림", "success");
+        return;
+      }
+
+      const text = `[한솥도시락 ${currentClass} 미주문 학생 (${unOrdered.length}명)]\n${unOrdered.join(', ')}`;
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = text;
+      tempTextArea.style.position = "fixed";
+      tempTextArea.style.left = "-9999px";
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showNotice(`미주문 학생 명단이 복사되었습니다!\n\n${unOrdered.join(', ')}`, "복사 완료", "success");
+      } catch (err) {
+        showNotice("클립보드 복사 중 오류가 발생했습니다.", "오류", "error");
+      } finally {
+        document.body.removeChild(tempTextArea);
+      }
+    };
+
+    // 주문 내역서 복사 기능 (하단에 미주문자 정보 자동 부가)
     window.copySummaryText = function() {
       const summaryMap = {};
       let totalQty = 0;
@@ -1123,7 +1764,7 @@
       });
       copyText += `====================================\n`;
       copyText += `총 수량: ${totalQty}개 / 총 금액: ${totalPrice.toLocaleString()}원\n\n`;
-      copyText += `[${currentClass} 학생별 주문 상세]\n`;
+      copyText += `[${currentClass} 학생별 상세 내역]\n`;
       
       const userGroup = {};
       orders.forEach(o => {
@@ -1135,6 +1776,13 @@
         copyText += `- ${u}: ${list}\n`;
       });
 
+      // 미주문자가 있다면 복사 텍스트 맨 아래에 안내 덧붙임
+      const orderedStudentNames = Object.keys(userGroup);
+      const unOrdered = savedStudents.filter(name => !orderedStudentNames.includes(name));
+      if (unOrdered.length > 0) {
+        copyText += `\n[미주문 학생 (${unOrdered.length}명)]\n${unOrdered.join(', ')}\n`;
+      }
+
       const tempTextArea = document.createElement("textarea");
       tempTextArea.value = copyText;
       tempTextArea.style.position = "fixed";
@@ -1143,7 +1791,7 @@
       tempTextArea.select();
       try {
         document.execCommand('copy');
-        showNotice(`[${currentClass}] 주문 요약이 클립보드에 복사되었습니다!\n(카카오톡, 문자 등에 바로 붙여넣기 하실 수 있습니다)`, "복사 완료", "success");
+        showNotice(`[${currentClass}] 주문 요약이 복사되었습니다!\n문자, 카카오톡 등에 바로 붙여넣기 하실 수 있습니다.`, "복사 완료", "success");
       } catch (err) {
         showNotice("클립보드 복사 중 오류가 발생했습니다.", "오류", "error");
       } finally {
@@ -1151,13 +1799,12 @@
       }
     };
 
-    // ⭐️ [현재 선택된 학년으로 자동 접속되는 QR 코드 생성] ⭐️
+    // QR 모달
     window.openQRModal = function() {
       document.getElementById('qrModal').classList.remove('hidden');
       const container = document.getElementById('qrcode');
       container.innerHTML = "";
 
-      // QR 접속 시 현재 학년 파라미터(?class=3학년 등)를 붙여 자동 진입되도록 처리
       const targetUrl = `${window.location.origin}${window.location.pathname}?class=${encodeURIComponent(currentClass)}`;
       
       new QRCode(container, {
@@ -1173,11 +1820,18 @@
     window.openFirebaseGuideModal = function() { document.getElementById('firebaseGuideModal').classList.remove('hidden'); };
     window.closeFirebaseGuideModal = function() { document.getElementById('firebaseGuideModal').classList.add('hidden'); };
 
+    // ⭐️ [관리자 모달 및 관리자 기기 락킹 인증] ⭐️
     window.openAdminModal = function() {
       document.getElementById('adminModal').classList.remove('hidden');
-      document.getElementById('adminAuthSection').classList.remove('hidden');
-      document.getElementById('adminEditSection').classList.add('hidden');
-      document.getElementById('adminPassword').value = "";
+      if (isAdminDevice) {
+        document.getElementById('adminAuthSection').classList.add('hidden');
+        document.getElementById('adminEditSection').classList.remove('hidden');
+        renderAdminMenuList();
+      } else {
+        document.getElementById('adminAuthSection').classList.remove('hidden');
+        document.getElementById('adminEditSection').classList.add('hidden');
+        document.getElementById('adminPassword').value = "";
+      }
     };
 
     window.closeAdminModal = function() { document.getElementById('adminModal').classList.add('hidden'); };
@@ -1185,11 +1839,17 @@
     window.verifyAdminPassword = function() {
       const pass = document.getElementById('adminPassword').value;
       if (pass === ADMIN_PASS) {
+        // 비밀번호 통과 시 이 기기를 관리자 기기로 영구 등록(락킹)!
+        isAdminDevice = true;
+        localStorage.setItem('hansot_is_admin_device', 'true');
+
+        applyDevicePermissionsUI();
         document.getElementById('adminAuthSection').classList.add('hidden');
         document.getElementById('adminEditSection').classList.remove('hidden');
         renderAdminMenuList();
+        showNotice("비밀번호 인증 완료!\n이 기기가 [👑 선생님 관리자 기기]로 영구 등록되었습니다.\n이제 [비우기], [관리자], [학생 삭제] 버튼을 모두 사용할 수 있습니다.", "관리자 기기 등록 완료", "success");
       } else {
-        showNotice("비밀번호가 올바르지 않습니다.", "인증 실패", "error");
+        showNotice("관리자 비밀번호가 올바르지 않습니다.", "인증 실패", "error");
       }
     };
 
@@ -1364,7 +2024,7 @@
       renderMenus();
       renderApp();
       closeAdminModal();
-      showNotice("메뉴 수정사항이 저장되었습니다!\n모든 학년(3학년, 2학년)의 화면에 공통 적용됩니다.", "저장 완료", "success");
+      showNotice("메뉴 수정사항이 저장되었습니다!\n모든 학년(3학년, 2학년)에 공통 적용됩니다.", "저장 완료", "success");
     };
 
     window.resetToDefaultMenusPrompt = function() {
